@@ -5,7 +5,8 @@
             [duct.middleware.not-found :refer [wrap-not-found]]
             [meta-merge.core :refer [meta-merge]]
             [ring.component.jetty :refer [jetty-server]]
-            [ring.middleware.defaults :refer [wrap-defaults api-defaults]]))
+            [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
+            [speicherstadt.endpoint.chunks :refer [chunks-endpoint]]))
 
 (def base-config
   {:app {:middleware [[wrap-not-found :not-found]
@@ -17,7 +18,9 @@
   (let [config (meta-merge base-config config)]
     (-> (component/system-map
          :app  (handler-component (:app config))
-         :http (jetty-server (:http config)))
+         :http (jetty-server (:http config))
+         :chunks (endpoint-component chunks-endpoint))
         (component/system-using
          {:http [:app]
-          :app  []}))))
+          :app  [:chunks]
+          :chunks []}))))
