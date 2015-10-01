@@ -15,8 +15,26 @@
 
 (deftest chunk-acceptance
   (let [handler (-> *system* :app :handler)]
-    (is (= (-> {:uri "/chunks/dead-beef"
-                :request-method :put}
-               handler
-               :status)
-           204))))
+    (testing "PUT a new chunk"
+      (is (= (-> {:uri "/chunks/dead-beef"
+                  :request-method :put
+                  :body "Hello World"}
+                 handler
+                 :status)
+             204)))
+    (testing "GET an existing chunk"
+      (let [response (handler {:uri "/chunks/dead-beef"
+                               :request-method :get})]
+        (is (= (:body response) "Hello World"))
+        (is (= (:status response) 200))))
+    (testing "GET a non-existing chunk"
+      (is (= (-> {:uri "/chunks/i-dont-exist"
+                  :request-method :get}
+                 handler
+                 :status)
+             404)))
+    (testing "GET a list of all chunks"
+      (let [response (handler {:uri "/chunks"
+                               :request-method :get})]
+        (is (= (:status response) 200))
+        (is (= (:body response) "[\"dead-beef\"]"))))))

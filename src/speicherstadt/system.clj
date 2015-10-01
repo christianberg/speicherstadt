@@ -6,7 +6,8 @@
             [meta-merge.core :refer [meta-merge]]
             [ring.component.jetty :refer [jetty-server]]
             [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
-            [speicherstadt.endpoint.chunks :refer [chunks-endpoint]]))
+            [speicherstadt.endpoint.chunks :refer [chunks-endpoint]]
+            [speicherstadt.component.chunk-storage.memory :refer [->MemoryStorageComponent]]))
 
 (def base-config
   {:app {:middleware [[wrap-not-found :not-found]
@@ -19,8 +20,9 @@
     (-> (component/system-map
          :app  (handler-component (:app config))
          :http (jetty-server (:http config))
-         :chunks (endpoint-component chunks-endpoint))
+         :chunks (endpoint-component chunks-endpoint)
+         :store (->MemoryStorageComponent))
         (component/system-using
          {:http [:app]
           :app  [:chunks]
-          :chunks []}))))
+          :chunks [:store]}))))
