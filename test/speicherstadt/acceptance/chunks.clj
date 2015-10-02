@@ -18,7 +18,7 @@
     (testing "PUT a new chunk"
       (is (= (-> {:uri "/chunks/dead-beef"
                   :request-method :put
-                  :body "Hello World"}
+                  :body (java.io.StringReader. "Hello World")}
                  handler
                  :status)
              204)))
