@@ -6,12 +6,14 @@
             [meta-merge.core :refer [meta-merge]]
             [ring.component.jetty :refer [jetty-server]]
             [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
+            [ring.middleware.json :refer [wrap-json-response]]
             [speicherstadt.endpoint.chunks :refer [chunks-endpoint]]
             [speicherstadt.component.chunk-storage.memory :refer [->MemoryStorageComponent]]))
 
 (def base-config
   {:app {:middleware [[wrap-not-found :not-found]
-                      [wrap-defaults :defaults]]
+                      [wrap-defaults :defaults]
+                      [wrap-json-response]]
          :not-found  "Resource Not Found"
          :defaults   (meta-merge api-defaults {})}})
 

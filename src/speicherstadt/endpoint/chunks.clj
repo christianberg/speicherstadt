@@ -7,7 +7,8 @@
   (routes
    (context "/chunks" []
             (GET "/" [] (fn [_]
-                          (response (str (vec (storage/list-all store))))))
+                          (-> (response (or (storage/list-all store) []))
+                              (content-type "application/json"))))
             (GET "/:id" [id] (fn [_]
                                (if-let [value (storage/retrieve store id)]
                                  (response value)

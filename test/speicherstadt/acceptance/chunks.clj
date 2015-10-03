@@ -40,4 +40,6 @@
       (let [response (handler {:uri "/chunks"
                                :request-method :get})]
         (is (= (:status response) 200))
+        (is (= (get-in response [:headers "Content-Type"])
+               "application/json"))
         (is (= (:body response) "[\"dead-beef\"]"))))))
