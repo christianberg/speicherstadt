@@ -18,6 +18,7 @@
     (testing "PUT a new chunk"
       (is (= (-> {:uri "/chunks/dead-beef"
                   :request-method :put
+                  :headers {"Content-Type" "application/octet-stream"}
                   :body (java.io.StringReader. "Hello World")}
                  handler
                  :status)
@@ -26,7 +27,9 @@
       (let [response (handler {:uri "/chunks/dead-beef"
                                :request-method :get})]
         (is (= (:body response) "Hello World"))
-        (is (= (:status response) 200))))
+        (is (= (:status response) 200))
+        (is (= (get-in response [:headers "Content-Type"])
+               "application/octet-stream"))))
     (testing "GET a non-existing chunk"
       (is (= (-> {:uri "/chunks/i-dont-exist"
                   :request-method :get}
