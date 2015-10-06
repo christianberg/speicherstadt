@@ -5,7 +5,7 @@
 (defrecord MemoryStorageComponent []
   component/Lifecycle
   (start [component]
-    (assoc component :chunk-data (atom {})))
+    (assoc component :chunk-data (atom (sorted-map))))
   (stop [component]
     (dissoc component :chunk-data))
   storage/Store
