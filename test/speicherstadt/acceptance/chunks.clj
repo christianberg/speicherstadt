@@ -2,6 +2,7 @@
   (:require [speicherstadt.system :as system]
             [com.stuartsierra.component :as component]
             [cheshire.core :as json]
+            [clojure.java.io :as io]
             [clojure.test :refer :all]))
 
 (def ^:dynamic *system* nil)
@@ -27,14 +28,14 @@
       (is (= (-> {:uri "/chunks/dead-beef"
                   :request-method :put
                   :headers {"Content-Type" "application/octet-stream"}
-                  :body (java.io.StringReader. "Hello World")}
+                  :body (java.io.ByteArrayInputStream. (.getBytes "Hello World"))}
                  handler
                  :status)
              204)))
     (testing "GET an existing chunk"
       (let [response (handler {:uri "/chunks/dead-beef"
                                :request-method :get})]
-        (is (= (:body response) "Hello World"))
+        (is (= (slurp (:body response)) "Hello World"))
         (is (= (:status response) 200))
         (is (= (get-in response [:headers "Content-Type"])
                "application/octet-stream"))))
@@ -56,7 +57,7 @@
       (handler {:uri "/chunks/abc"
                 :request-method :put
                 :headers {"Content-Type" "application/octet-stream"}
-                :body (java.io.StringReader. "Hello Foo")})
+                :body (java.io.ByteArrayInputStream. (.getBytes "Hello Foo"))})
       (let [response (handler {:uri "/chunks"
                                :request-method :get})]
         (is (= (:status response) 200))
@@ -64,4 +65,16 @@
                "application/json"))
         (is (= (json/parse-string (:body response) true)
                ["abc"
-                "dead-beef"]))))))
+                "dead-beef"]))))
+    (testing "PUT and GET a binary chunk"
+      (let [size 1000
+            upload (byte-array (take size (repeatedly #(- (rand-int 256) 128))))
+            download (byte-array size)
+            up-response (handler {:uri "/chunks/binary"
+                                  :request-method :put
+                                  :headers {"Content-Type" "application/octet-stream"}
+                                  :body (io/input-stream upload)})
+            down-response (handler {:uri "/chunks/binary"
+                                    :request-method :get})]
+        (.read (:body down-response) download 0 size)
+        (is (= (seq upload) (seq download)))))))
