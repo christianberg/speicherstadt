@@ -3,7 +3,10 @@
             [com.stuartsierra.component :as component]
             [cheshire.core :as json]
             [clojure.java.io :as io]
-            [clojure.test :refer :all]))
+            [clojure.test :refer :all])
+  (:import [java.io ByteArrayInputStream]
+           [java.math BigInteger]
+           [java.security MessageDigest]))
 
 (def ^:dynamic *system* nil)
 
@@ -15,8 +18,13 @@
 
 (use-fixtures :each setup-system)
 
+(defn string->stream [s]
+  (ByteArrayInputStream. (.getBytes s)))
+
 (deftest chunk-acceptance
-  (let [handler (-> *system* :app :handler)]
+  (let [hash-of {"Hello World" "sha256-a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e"
+                 "Hello Foo" "sha256-c3a26588bb78f6c08a0ef07ad88a5a0f9ff3f66940606c656d44cb6a239c6343"}
+        handler (-> *system* :app :handler)]
     (testing "List of chunks is empty before uploading any chunks"
       (let [response (handler {:uri "/chunks"
                                :request-method :get})]
@@ -25,22 +33,22 @@
                "application/json"))
         (is (= (json/parse-string (:body response) true) []))))
     (testing "PUT a new chunk"
-      (is (= (-> {:uri "/chunks/sha256-a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e"
+      (is (= (-> {:uri (str "/chunks/" (hash-of "Hello World"))
                   :request-method :put
                   :headers {"Content-Type" "application/octet-stream"}
-                  :body (java.io.ByteArrayInputStream. (.getBytes "Hello World"))}
+                  :body (string->stream "Hello World")}
                  handler
                  :status)
              204)))
     (testing "PUTting a chunk with wrong hash fails"
       (is (= (-> {:uri "/chunks/sha256-12345"
                   :request-method :put
-                  :body (java.io.ByteArrayInputStream. (.getBytes "Hello World"))}
+                  :body (string->stream "Hello World")}
                  handler
                  :status)
              400)))
     (testing "GET an existing chunk"
-      (let [response (handler {:uri "/chunks/sha256-a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e"
+      (let [response (handler {:uri (str "/chunks/" (hash-of "Hello World"))
                                :request-method :get})]
         (is (= (slurp (:body response)) "Hello World"))
         (is (= (:status response) 200))
@@ -59,25 +67,25 @@
         (is (= (get-in response [:headers "Content-Type"])
                "application/json"))
         (is (= (json/parse-string (:body response) true)
-               ["sha256-a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e"]))))
+               [(hash-of "Hello World")]))))
     (testing "GET a list of two chunks"
-      (handler {:uri "/chunks/sha256-c3a26588bb78f6c08a0ef07ad88a5a0f9ff3f66940606c656d44cb6a239c6343"
+      (handler {:uri (str "/chunks/" (hash-of "Hello Foo"))
                 :request-method :put
                 :headers {"Content-Type" "application/octet-stream"}
-                :body (java.io.ByteArrayInputStream. (.getBytes "Hello Foo"))})
+                :body (string->stream "Hello Foo")})
       (let [response (handler {:uri "/chunks"
                                :request-method :get})]
         (is (= (:status response) 200))
         (is (= (get-in response [:headers "Content-Type"])
                "application/json"))
         (is (= (json/parse-string (:body response) true)
-               ["sha256-a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e"
-                "sha256-c3a26588bb78f6c08a0ef07ad88a5a0f9ff3f66940606c656d44cb6a239c6343"]))))
+               (map hash-of ["Hello World" "Hello Foo"])))))
     (testing "PUT and GET a binary chunk"
       (let [size 1000
             upload (byte-array (take size (repeatedly #(- (rand-int 256) 128))))
             download (byte-array size)
-            digest (java.math.BigInteger. 1 (.digest (java.security.MessageDigest/getInstance "SHA-256") upload))
+            digest (BigInteger. 1 (.digest (MessageDigest/getInstance "SHA-256")
+                                           upload))
             uri (format "/chunks/sha256-%064x" digest)
             up-response (handler {:uri uri
                                   :request-method :put
