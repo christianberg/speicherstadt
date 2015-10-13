@@ -68,11 +68,13 @@
                "application/json"))
         (is (= (json/parse-string (:body response) true)
                [(hash-of "Hello World")]))))
+    (testing "POST a chunk"
+      (let [response (handler {:uri "/chunks"
+                               :request-method :post
+                               :body (string->stream "Hello Foo")})]
+        (is (= (:status response) 204))
+        (is (= (get-in response [:headers "Content-Location"]) (str "/chunks/" (hash-of "Hello Foo"))))))
     (testing "GET a list of two chunks"
-      (handler {:uri (str "/chunks/" (hash-of "Hello Foo"))
-                :request-method :put
-                :headers {"Content-Type" "application/octet-stream"}
-                :body (string->stream "Hello Foo")})
       (let [response (handler {:uri "/chunks"
                                :request-method :get})]
         (is (= (:status response) 200))

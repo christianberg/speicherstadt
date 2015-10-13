@@ -46,4 +46,15 @@
                        (do
                          (storage/store store id wrapped-stream)
                          (status {} 204))
-                       (status {} 400))))))))
+                       (status {} 400)))))
+            (POST "/" []
+                  (fn [request]
+                    (let [wrapped-stream (-> (:body request)
+                                             BufferedInputStream.
+                                             (DigestInputStream.
+                                              (MessageDigest/getInstance "SHA-256")))
+                          stream-hash (calculate-hash! wrapped-stream)]
+                      (storage/store store stream-hash wrapped-stream)
+                      (-> {}
+                          (status 204)
+                          (header "Content-Location" (str "/chunks/" stream-hash)))))))))
