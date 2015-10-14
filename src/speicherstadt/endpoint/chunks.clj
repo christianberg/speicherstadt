@@ -45,7 +45,7 @@
                      (if (= stream-hash id)
                        (do
                          (storage/store store id wrapped-stream)
-                         (status {} 204))
+                         (created (str "/chunks/" id)))
                        (status {} 400)))))
             (POST "/" []
                   (fn [request]
@@ -53,8 +53,7 @@
                                              BufferedInputStream.
                                              (DigestInputStream.
                                               (MessageDigest/getInstance "SHA-256")))
-                          stream-hash (calculate-hash! wrapped-stream)]
+                          stream-hash (calculate-hash! wrapped-stream)
+                          uri (str "/chunks/" stream-hash)]
                       (storage/store store stream-hash wrapped-stream)
-                      (-> {}
-                          (status 204)
-                          (header "Content-Location" (str "/chunks/" stream-hash)))))))))
+                      (created uri)))))))

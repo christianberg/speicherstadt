@@ -39,7 +39,7 @@
                   :body (string->stream "Hello World")}
                  handler
                  :status)
-             204)))
+             201)))
     (testing "PUTting a chunk with wrong hash fails"
       (is (= (-> {:uri "/chunks/sha256-12345"
                   :request-method :put
@@ -72,8 +72,8 @@
       (let [response (handler {:uri "/chunks"
                                :request-method :post
                                :body (string->stream "Hello Foo")})]
-        (is (= (:status response) 204))
-        (is (= (get-in response [:headers "Content-Location"]) (str "/chunks/" (hash-of "Hello Foo"))))))
+        (is (= (:status response) 201))
+        (is (= (get-in response [:headers "Location"]) (str "/chunks/" (hash-of "Hello Foo"))))))
     (testing "GET a list of two chunks"
       (let [response (handler {:uri "/chunks"
                                :request-method :get})]
