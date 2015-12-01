@@ -8,7 +8,8 @@
             [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
             [ring.middleware.json :refer [wrap-json-response]]
             [speicherstadt.endpoint.chunks :refer [chunks-endpoint]]
-            [speicherstadt.component.chunk-storage :refer [new-chunk-store]]))
+            [speicherstadt.component.chunk-storage :refer [new-chunk-store]]
+            speicherstadt.component.chunk-storage.memory))
 
 (def base-config
   {:app {:middleware [[wrap-not-found :not-found]
