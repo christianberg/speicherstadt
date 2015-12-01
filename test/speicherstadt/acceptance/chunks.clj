@@ -11,14 +11,6 @@
 
 (def ^:dynamic *system* nil)
 
-(defn setup-system [f]
-  (binding [*system* (component/start
-                      (system/new-system {:http {:port 3333}}))]
-    (f)
-    (component/stop *system*)))
-
-(use-fixtures :each setup-system)
-
 (defn string->stream [s]
   (ByteArrayInputStream. (.getBytes s)))
 
@@ -99,3 +91,12 @@
                                     :request-method :get})]
         (.read (:body down-response) download 0 size)
         (is (= (seq upload) (seq download)))))))
+
+(deftest chunk-memory-storage
+  (binding [*system* (component/start
+                      (system/new-system {:http {:port 3333}}))]
+    (chunk-acceptance)
+    (component/stop *system*)))
+
+(defn test-ns-hook []
+  (chunk-memory-storage))
