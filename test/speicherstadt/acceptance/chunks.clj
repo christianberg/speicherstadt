@@ -1,6 +1,7 @@
 (ns speicherstadt.acceptance.chunks
   (:require [speicherstadt.system :as system]
             [com.stuartsierra.component :as component]
+            [ring.util.response :as r]
             [cheshire.core :as json]
             [clojure.java.io :as io]
             [clojure.test :refer :all])
@@ -29,7 +30,7 @@
       (let [response (handler {:uri "/chunks"
                                :request-method :get})]
         (is (= (:status response) 200))
-        (is (= (get-in response [:headers "Content-Type"])
+        (is (= (r/get-header response "Content-Type")
                "application/json"))
         (is (= (json/parse-string (:body response) true) []))))
     (testing "PUT a new chunk"
@@ -52,7 +53,7 @@
                                :request-method :get})]
         (is (= (slurp (:body response)) "Hello World"))
         (is (= (:status response) 200))
-        (is (= (get-in response [:headers "Content-Type"])
+        (is (= (r/get-header response "Content-Type")
                "application/octet-stream"))))
     (testing "GET a non-existing chunk"
       (is (= (-> {:uri "/chunks/i-dont-exist"
@@ -64,7 +65,7 @@
       (let [response (handler {:uri "/chunks"
                                :request-method :get})]
         (is (= (:status response) 200))
-        (is (= (get-in response [:headers "Content-Type"])
+        (is (= (r/get-header response "Content-Type")
                "application/json"))
         (is (= (json/parse-string (:body response) true)
                [(hash-of "Hello World")]))))
@@ -73,12 +74,13 @@
                                :request-method :post
                                :body (string->stream "Hello Foo")})]
         (is (= (:status response) 201))
-        (is (= (get-in response [:headers "Location"]) (str "/chunks/" (hash-of "Hello Foo"))))))
+        (is (= (r/get-header response "Location")
+               (str "/chunks/" (hash-of "Hello Foo"))))))
     (testing "GET a list of two chunks"
       (let [response (handler {:uri "/chunks"
                                :request-method :get})]
         (is (= (:status response) 200))
-        (is (= (get-in response [:headers "Content-Type"])
+        (is (= (r/get-header response "Content-Type")
                "application/json"))
         (is (= (json/parse-string (:body response) true)
                (map hash-of ["Hello World" "Hello Foo"])))))
