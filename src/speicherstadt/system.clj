@@ -8,14 +8,15 @@
             [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
             [ring.middleware.json :refer [wrap-json-response]]
             [speicherstadt.endpoint.chunks :refer [chunks-endpoint]]
-            [speicherstadt.component.chunk-storage.memory :refer [->MemoryStorageComponent]]))
+            [speicherstadt.component.chunk-storage :refer [new-chunk-store]]))
 
 (def base-config
   {:app {:middleware [[wrap-not-found :not-found]
                       [wrap-defaults :defaults]
                       [wrap-json-response]]
          :not-found  "Resource Not Found"
-         :defaults   (meta-merge api-defaults {})}})
+         :defaults   (meta-merge api-defaults {})}
+   :chunk-storage {:type :memory}})
 
 (defn new-system [config]
   (let [config (meta-merge base-config config)]
@@ -23,7 +24,7 @@
          :app  (handler-component (:app config))
          :http (jetty-server (:http config))
          :chunks (endpoint-component chunks-endpoint)
-         :store (->MemoryStorageComponent))
+         :store (new-chunk-store (:chunk-storage config)))
         (component/system-using
          {:http [:app]
           :app  [:chunks]

@@ -25,3 +25,6 @@
     (swap! (:chunk-data component) assoc id (slurp-bytes content)))
   (list-all [component]
     (keys @(:chunk-data component))))
+
+(defmethod storage/new-chunk-store :memory [config]
+  (->MemoryStorageComponent))
