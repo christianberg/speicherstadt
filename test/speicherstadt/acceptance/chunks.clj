@@ -4,7 +4,8 @@
             [ring.util.response :as r]
             [cheshire.core :as json]
             [clojure.java.io :as io]
-            [clojure.test :refer :all])
+            [clojure.test :refer :all]
+            [me.raynes.fs :as fs])
   (:import [java.io ByteArrayInputStream]
            [java.math BigInteger]
            [java.security MessageDigest]))
@@ -94,9 +95,21 @@
 
 (deftest chunk-memory-storage
   (binding [*system* (component/start
-                      (system/new-system {:http {:port 3333}}))]
+                      (system/new-system {:http {:port 3333}
+                                          :chunk-storage {:type :memory}}))]
     (chunk-acceptance)
     (component/stop *system*)))
 
+(deftest chunk-file-storage
+  (let [basedir (fs/temp-dir "chunktest")]
+    (binding [*system* (component/start
+                        (system/new-system {:http {:port 3333}
+                                            :chunk-storage {:type :file
+                                                            :basedir basedir}}))]
+      (chunk-acceptance)
+      (component/stop *system*)
+      (fs/delete-dir basedir))))
+
 (defn test-ns-hook []
-  (chunk-memory-storage))
+  (chunk-memory-storage)
+  (chunk-file-storage))

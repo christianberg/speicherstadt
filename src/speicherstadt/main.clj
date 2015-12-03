@@ -8,7 +8,9 @@
 
 (def prod-config
   {:app {:middleware     [[wrap-hide-errors :internal-error]]
-         :internal-error "Internal Server Error"}})
+         :internal-error "Internal Server Error"}
+   :chunk-storage {:type :file
+                   :basedir "/data"}})
 
 (def config
   (meta-merge config/defaults

@@ -8,6 +8,7 @@
                  [duct "0.3.0"]
                  [environ "1.0.0"]
                  [meta-merge "0.1.1"]
+                 [me.raynes/fs "1.4.6"]
                  [ring "1.4.0"]
                  [ring/ring-defaults "0.1.5"]
                  [ring-jetty-component "0.2.2"]
