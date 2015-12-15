@@ -3,7 +3,6 @@
             [ring.util.response :refer :all]
             [speicherstadt.component.chunk-storage :as storage])
   (:import [java.math BigInteger]
-           [java.io BufferedInputStream]
            [java.security DigestInputStream MessageDigest]))
 
 (defn calculate-hash [stream]
@@ -29,7 +28,6 @@
             (PUT "/:id" [id]
                  (fn [request]
                    (let [wrapped-stream (-> (:body request)
-                                            BufferedInputStream.
                                             (DigestInputStream.
                                              (MessageDigest/getInstance "SHA-256")))
                          stream-hash (delay (let [hash (calculate-hash wrapped-stream)]
@@ -41,7 +39,6 @@
             (POST "/" []
                   (fn [request]
                     (let [wrapped-stream (-> (:body request)
-                                             BufferedInputStream.
                                              (DigestInputStream.
                                               (MessageDigest/getInstance "SHA-256")))
                           stream-hash (delay (calculate-hash wrapped-stream))]
