@@ -15,8 +15,11 @@
       (when (fs/file? path)
         (io/input-stream path))))
   (store [component id content]
-    (let [path (fs/file basedir id)]
-      (io/copy content path)))
+    (let [tmp-path (fs/file basedir (fs/temp-name "chunk-" ".part"))]
+      (io/copy content tmp-path)
+      (if (force id)
+        (fs/rename tmp-path (fs/file basedir (force id)))
+        (fs/delete tmp-path))))
   (list-all [component]
     (map fs/base-name (fs/list-dir basedir))))
 

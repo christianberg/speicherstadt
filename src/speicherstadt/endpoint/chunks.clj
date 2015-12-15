@@ -6,16 +6,7 @@
            [java.io BufferedInputStream]
            [java.security DigestInputStream MessageDigest]))
 
-(defn read-all-bytes [stream]
-  (if (= (.read stream) -1)
-    stream
-    (recur stream)))
-
-(defn calculate-hash! [stream]
-  (doto stream
-    (.mark 1000000000)
-    read-all-bytes
-    .reset)
+(defn calculate-hash [stream]
   (->>
    (.. stream
        getMessageDigest
@@ -41,11 +32,11 @@
                                             BufferedInputStream.
                                             (DigestInputStream.
                                              (MessageDigest/getInstance "SHA-256")))
-                         stream-hash (calculate-hash! wrapped-stream)]
-                     (if (= stream-hash id)
-                       (do
-                         (storage/store store id wrapped-stream)
-                         (created (str "/chunks/" id)))
+                         stream-hash (delay (let [hash (calculate-hash wrapped-stream)]
+                                              (when (= hash id) hash)))]
+                     (storage/store store stream-hash wrapped-stream)
+                     (if (force stream-hash)
+                       (created (str "/chunks/" (force stream-hash)))
                        (status {} 400)))))
             (POST "/" []
                   (fn [request]
@@ -53,7 +44,6 @@
                                              BufferedInputStream.
                                              (DigestInputStream.
                                               (MessageDigest/getInstance "SHA-256")))
-                          stream-hash (calculate-hash! wrapped-stream)
-                          uri (str "/chunks/" stream-hash)]
+                          stream-hash (delay (calculate-hash wrapped-stream))]
                       (storage/store store stream-hash wrapped-stream)
-                      (created uri)))))))
+                      (created (str "/chunks/" (force stream-hash)))))))))

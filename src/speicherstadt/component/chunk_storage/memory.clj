@@ -22,7 +22,9 @@
       (io/input-stream value)))
   (store [component id content]
     (assert (instance? java.io.InputStream content))
-    (swap! (:chunk-data component) assoc id (slurp-bytes content)))
+    (let [bytes (slurp-bytes content)]
+      (when (force id)
+        (swap! (:chunk-data component) assoc (force id) bytes))))
   (list-all [component]
     (keys @(:chunk-data component))))
 
