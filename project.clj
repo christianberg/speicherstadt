@@ -6,7 +6,7 @@
                  [com.stuartsierra/component "0.3.1"]
                  [compojure "1.4.0"]
                  [duct "0.5.6"]
-                 [environ "1.0.0"]
+                 [environ "1.0.1"]
                  [meta-merge "0.1.1"]
                  [me.raynes/fs "1.4.6"]
                  [ring "1.4.0"]
