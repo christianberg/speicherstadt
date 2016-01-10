@@ -23,6 +23,44 @@ storage backend, but the idea is for chunks to be relatively small (~
 the name). This will be done by another service, yet to be
 implemented.
 
+## Examples
+
+Create a new chunk with a string value (and print the response
+headers):
+
+```sh
+curl -D - -X POST -H "Content-Type: application/octet-stream" -d "Hello World" http://localhost:3000/chunks
+```
+
+```
+HTTP/1.1 201 Created
+Date: Sun, 10 Jan 2016 15:50:04 GMT
+Location: /chunks/sha256-a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e
+Content-Type: application/octet-stream
+Content-Length: 0
+Server: Jetty(9.2.10.v20150310)
+```
+
+List all chunks:
+
+```sh
+curl http://localhost:3000/chunks
+```
+
+```
+["sha256-a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e"]
+```
+
+Get the content of a single chunk:
+
+```sh
+curl http://localhost:3000/chunks/sha256-a591a6d40bf420404a011733cfb7b190d62c65bf0bcda32b57b277d9ad9f146e
+```
+
+```
+Hello World
+```
+
 ## Developing
 
 ### Setup
