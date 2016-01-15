@@ -11,6 +11,8 @@ performance - this remains to be seen.
 
 [Camlistore]: http://camlistore.org/
 
+[![Build Status](https://travis-ci.org/christianberg/speicherstadt.svg?branch=master)](https://travis-ci.org/christianberg/speicherstadt) [![Dependency Status](https://www.versioneye.com/user/projects/568189c3eb4f47003c0008bd/badge.svg?style=flat)](https://www.versioneye.com/user/projects/568189c3eb4f47003c0008bd)
+
 ## Current status
 
 Not much is there yet. Currently only the `chunks` service exists,
