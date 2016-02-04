@@ -5,7 +5,7 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [com.stuartsierra/component "0.3.1"]
                  [compojure "1.4.0"]
-                 [duct "0.5.7"]
+                 [duct "0.5.8"]
                  [environ "1.0.2"]
                  [meta-merge "0.1.1"]
                  [me.raynes/fs "1.4.6"]
