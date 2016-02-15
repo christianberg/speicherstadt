@@ -8,6 +8,7 @@
             [ring.middleware.defaults :refer [wrap-defaults api-defaults]]
             [ring.middleware.json :refer [wrap-json-response]]
             [speicherstadt.endpoint.chunks :refer [chunks-endpoint]]
+            [speicherstadt.endpoint.blobs :refer [blobs-endpoint]]
             [speicherstadt.component.chunk-storage :refer [new-chunk-store]]
             speicherstadt.component.chunk-storage.memory
             speicherstadt.component.chunk-storage.file))
@@ -26,8 +27,9 @@
          :app  (handler-component (:app config))
          :http (jetty-server (:http config))
          :chunks (endpoint-component chunks-endpoint)
+         :blobs (endpoint-component blobs-endpoint)
          :store (new-chunk-store (:chunk-storage config)))
         (component/system-using
          {:http [:app]
-          :app  [:chunks]
+          :app  [:chunks :blobs]
           :chunks [:store]}))))
