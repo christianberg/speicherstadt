@@ -11,7 +11,9 @@
             [speicherstadt.endpoint.blobs :refer [blobs-endpoint]]
             [speicherstadt.component.chunk-storage :refer [new-chunk-store]]
             speicherstadt.component.chunk-storage.memory
-            speicherstadt.component.chunk-storage.file))
+            speicherstadt.component.chunk-storage.file
+            [speicherstadt.component.metrics-store :refer [metrics-store]]
+            [speicherstadt.endpoint.metrics :refer [metrics-endpoint]]))
 
 (def base-config
   {:app {:middleware [[wrap-not-found :not-found]
@@ -28,8 +30,11 @@
          :http (jetty-server (:http config))
          :chunks (endpoint-component chunks-endpoint)
          :blobs (endpoint-component blobs-endpoint)
-         :store (new-chunk-store (:chunk-storage config)))
+         :store (new-chunk-store (:chunk-storage config))
+         :metrics-store (metrics-store)
+         :metrics (endpoint-component metrics-endpoint))
         (component/system-using
          {:http [:app]
-          :app  [:chunks :blobs]
-          :chunks [:store]}))))
+          :app  [:chunks :blobs :metrics]
+          :chunks [:store]
+          :metrics [:metrics-store]}))))
