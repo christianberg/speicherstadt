@@ -13,12 +13,15 @@
             speicherstadt.component.chunk-storage.memory
             speicherstadt.component.chunk-storage.file
             [speicherstadt.component.metrics-store :refer [metrics-store]]
-            [speicherstadt.endpoint.metrics :refer [metrics-endpoint]]))
+            [speicherstadt.endpoint.metrics :refer [metrics-endpoint]]
+            [speicherstadt.middleware.metrics :refer [wrap-metrics]]))
 
 (def base-config
   {:app {:middleware [[wrap-not-found :not-found]
                       [wrap-defaults :defaults]
-                      [wrap-json-response]]
+                      [wrap-json-response]
+                      [wrap-metrics :app-name :metrics-store]]
+         :app-name "speicherstadt"
          :not-found  "Resource Not Found"
          :defaults   (meta-merge api-defaults {})}
    :chunk-storage {:type :memory}})
@@ -35,6 +38,6 @@
          :metrics (endpoint-component metrics-endpoint))
         (component/system-using
          {:http [:app]
-          :app  [:chunks :blobs :metrics]
+          :app  [:chunks :blobs :metrics :metrics-store]
           :chunks [:store]
           :metrics [:metrics-store]}))))
