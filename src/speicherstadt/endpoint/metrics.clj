@@ -1,12 +1,10 @@
 (ns speicherstadt.endpoint.metrics
-  (:require [compojure.core :refer :all]
+  (:require [speicherstadt.component.metrics-store :as metrics-store]
+            [compojure.core :refer :all]
             [prometheus.core :as prometheus]))
 
-(defn metrics-endpoint [config]
+(defn metrics-endpoint [{:keys [metrics-store]}]
   (routes
    (context "/metrics" []
-            (GET "/" [] (prometheus/dump-metrics (-> config
-                                                     :metrics-store
-                                                     :store
-                                                     deref
-                                                     :registry))))))
+            (GET "/" [] (prometheus/dump-metrics
+                         (metrics-store/registry metrics-store))))))
