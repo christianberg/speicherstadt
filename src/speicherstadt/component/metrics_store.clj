@@ -3,7 +3,7 @@
             [prometheus.core :as prometheus]))
 
 (defprotocol Metrics
-  (registry [metrics-store]))
+  (dump-metrics [metrics-store]))
 
 (defrecord MetricsStore []
   component/Lifecycle
@@ -12,8 +12,9 @@
   (stop [this]
     (dissoc this :store))
   Metrics
-  (registry [this]
-    (:registry @(:store this))))
+  (dump-metrics [this]
+    (prometheus/dump-metrics
+     (:registry @(:store this)))))
 
 (defn metrics-store []
   (->MetricsStore))
