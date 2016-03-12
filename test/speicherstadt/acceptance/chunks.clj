@@ -28,7 +28,7 @@
         (is (= (json/parse-string (:body response) true) []))))
     (testing "PUT a new chunk"
       (is (= (-> (mock/request :put (str "/chunks/" (hash-of "Hello World")))
-                 (mock/header "Content-Type" "application/octet-stream")
+                 (mock/content-type "application/octet-stream")
                  (mock/body "Hello World")
                  handler
                  :status)
@@ -80,7 +80,7 @@
                                            upload))
             uri (format "/chunks/sha256-%064x" digest)
             up-response (-> (mock/request :put uri)
-                            (mock/header "Content-Type" "application/octet-stream")
+                            (mock/content-type "application/octet-stream")
                             (assoc :body (io/input-stream upload))
                             handler)
             down-response (handler (mock/request :get uri))]
