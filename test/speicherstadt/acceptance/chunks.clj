@@ -5,7 +5,8 @@
             [cheshire.core :as json]
             [clojure.java.io :as io]
             [clojure.test :refer :all]
-            [me.raynes.fs :as fs])
+            [me.raynes.fs :as fs]
+            [ring.mock.request :as mock])
   (:import [java.io ByteArrayInputStream]
            [java.math BigInteger]
            [java.security MessageDigest]))
@@ -20,58 +21,52 @@
                  "Hello Foo" "sha256-c3a26588bb78f6c08a0ef07ad88a5a0f9ff3f66940606c656d44cb6a239c6343"}
         handler (-> *system* :app :handler)]
     (testing "List of chunks is empty before uploading any chunks"
-      (let [response (handler {:uri "/chunks"
-                               :request-method :get})]
+      (let [response (handler (mock/request :get "/chunks"))]
         (is (= (:status response) 200))
         (is (= (r/get-header response "Content-Type")
                "application/json"))
         (is (= (json/parse-string (:body response) true) []))))
     (testing "PUT a new chunk"
-      (is (= (-> {:uri (str "/chunks/" (hash-of "Hello World"))
-                  :request-method :put
-                  :headers {"Content-Type" "application/octet-stream"}
-                  :body (string->stream "Hello World")}
+      (is (= (-> (mock/request :put (str "/chunks/" (hash-of "Hello World")))
+                 (mock/header "Content-Type" "application/octet-stream")
+                 (mock/body "Hello World")
                  handler
                  :status)
              201)))
     (testing "PUTting a chunk with wrong hash fails"
-      (is (= (-> {:uri "/chunks/sha256-12345"
-                  :request-method :put
-                  :body (string->stream "Hello World")}
+      (is (= (-> (mock/request :put "/chunks/sha256-12345")
+                 (mock/body "Hello World")
                  handler
                  :status)
              400)))
     (testing "GET an existing chunk"
-      (let [response (handler {:uri (str "/chunks/" (hash-of "Hello World"))
-                               :request-method :get})]
+      (let [response (handler (mock/request :get
+                                            (str "/chunks/" (hash-of "Hello World"))))]
         (is (= (slurp (:body response)) "Hello World"))
         (is (= (:status response) 200))
         (is (= (r/get-header response "Content-Type")
                "application/octet-stream"))))
     (testing "GET a non-existing chunk"
-      (is (= (-> {:uri "/chunks/i-dont-exist"
-                  :request-method :get}
+      (is (= (-> (mock/request :get "/chunks/i-dont-exist")
                  handler
                  :status)
              404)))
     (testing "GET a list of one chunk"
-      (let [response (handler {:uri "/chunks"
-                               :request-method :get})]
+      (let [response (handler (mock/request :get "/chunks"))]
         (is (= (:status response) 200))
         (is (= (r/get-header response "Content-Type")
                "application/json"))
         (is (= (json/parse-string (:body response) true)
                [(hash-of "Hello World")]))))
     (testing "POST a chunk"
-      (let [response (handler {:uri "/chunks"
-                               :request-method :post
-                               :body (string->stream "Hello Foo")})]
+      (let [response (-> (mock/request :post "/chunks")
+                         (mock/body "Hello Foo")
+                         handler)]
         (is (= (:status response) 201))
         (is (= (r/get-header response "Location")
                (str "/chunks/" (hash-of "Hello Foo"))))))
     (testing "GET a list of two chunks"
-      (let [response (handler {:uri "/chunks"
-                               :request-method :get})]
+      (let [response (handler (mock/request :get "/chunks"))]
         (is (= (:status response) 200))
         (is (= (r/get-header response "Content-Type")
                "application/json"))
@@ -84,12 +79,11 @@
             digest (BigInteger. 1 (.digest (MessageDigest/getInstance "SHA-256")
                                            upload))
             uri (format "/chunks/sha256-%064x" digest)
-            up-response (handler {:uri uri
-                                  :request-method :put
-                                  :headers {"Content-Type" "application/octet-stream"}
-                                  :body (io/input-stream upload)})
-            down-response (handler {:uri uri
-                                    :request-method :get})]
+            up-response (-> (mock/request :put uri)
+                            (mock/header "Content-Type" "application/octet-stream")
+                            (assoc :body (io/input-stream upload))
+                            handler)
+            down-response (handler (mock/request :get uri))]
         (.read (:body down-response) download 0 size)
         (is (= (seq upload) (seq download)))))))
 

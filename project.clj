@@ -34,4 +34,4 @@
                                   [org.clojure/tools.namespace "0.2.11"]
                                   [kerodon "0.7.0"]]
                    :env {:port 3000}}
-   :project/test  {}})
+   :project/test  {:dependencies [[ring/ring-mock "0.3.0"]]}})
