@@ -64,7 +64,7 @@
                          handler)]
         (is (= (:status response) 201))
         (is (= (r/get-header response "Location")
-               (str "/chunks/" (hash-of "Hello Foo"))))))
+               (str "http://localhost/chunks/" (hash-of "Hello Foo"))))))
     (testing "GET a list of two chunks"
       (let [response (handler (mock/request :get "/chunks"))]
         (is (= (:status response) 200))
