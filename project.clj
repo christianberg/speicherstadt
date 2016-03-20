@@ -33,5 +33,5 @@
                    :dependencies [[reloaded.repl "0.2.1"]
                                   [org.clojure/tools.namespace "0.2.11"]
                                   [kerodon "0.7.0"]]
-                   :env {:port 3000}}
+                   :env {:port "3000"}}
    :project/test  {:dependencies [[ring/ring-mock "0.3.0"]]}})
