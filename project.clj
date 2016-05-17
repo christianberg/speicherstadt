@@ -6,7 +6,7 @@
                  [com.stuartsierra/component "0.3.1"]
                  [compojure "1.5.0"]
                  [duct "0.5.10"]
-                 [environ "1.0.2"]
+                 [environ "1.0.3"]
                  [meta-merge "0.1.1"]
                  [me.raynes/fs "1.4.6"]
                  [ring "1.4.0"]
@@ -14,7 +14,7 @@
                  [ring-jetty-component "0.3.1"]
                  [ring/ring-json "0.4.0"]
                  [com.soundcloud/prometheus-clj "2.4.0"]]
-  :plugins [[lein-environ "1.0.2"]
+  :plugins [[lein-environ "1.0.3"]
             [lein-gen "0.2.2"]]
   :generators [[duct/generators "0.3.0"]]
   :duct {:ns-prefix speicherstadt}
