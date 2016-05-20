@@ -102,15 +102,6 @@ user=> (reset)
 :started
 ```
 
-### Generators
-
-This project has several [generators][] to help you create files.
-
-* `lein gen endpoint <name>` to create a new endpoint
-* `lein gen component <name>` to create a new component
-
-[generators]: https://github.com/weavejester/lein-generate
-
 ## Deploying
 
 FIXME: steps to deploy
