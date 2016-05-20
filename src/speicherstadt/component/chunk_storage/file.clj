@@ -21,7 +21,7 @@
         (fs/rename tmp-path (fs/file basedir (force id)))
         (fs/delete tmp-path))))
   (list-all [component]
-    (map fs/base-name (fs/list-dir basedir))))
+    (sort (map fs/base-name (fs/list-dir basedir)))))
 
 (defmethod storage/new-chunk-store :file [config]
   (->FileStorageComponent (:basedir config)))
