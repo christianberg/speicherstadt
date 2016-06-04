@@ -5,7 +5,7 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [com.stuartsierra/component "0.3.1"]
                  [compojure "1.5.0"]
-                 [duct "0.6.1"]
+                 [duct "0.7.0"]
                  [environ "1.0.3"]
                  [meta-merge "0.1.1"]
                  [me.raynes/fs "1.4.6"]
@@ -25,8 +25,8 @@
    :uberjar {:aot :all}
    :profiles/dev  {}
    :profiles/test {}
-   :project/dev   {:dependencies [[duct/generate "0.6.1"]
-                                  [reloaded.repl "0.2.1"]
+   :project/dev   {:dependencies [[duct/generate "0.7.0"]
+                                  [reloaded.repl "0.2.2"]
                                   [org.clojure/tools.namespace "0.2.11"]
                                   [org.clojure/tools.nrepl "0.2.12"]
                                   [eftest "0.1.1"]
