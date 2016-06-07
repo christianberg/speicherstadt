@@ -104,7 +104,10 @@ user=> (reset)
 
 ## Deploying
 
-FIXME: steps to deploy
+You can use the included Dockerfile to build a Docker image running
+the chunk service. The service is running on port 8080, data is stored
+on a data volume, which you can attach to the container in order to
+preserve data across container instantiations.
 
 ## Legal
 
