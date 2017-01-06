@@ -1,4 +1,4 @@
-# speicherstadt
+# Speicherstadt
 
 A system for storing data.
 
@@ -24,6 +24,17 @@ storage backend, but the idea is for chunks to be relatively small (~
 100-500 kB max) and to split larger pieces of data into chunks (hence
 the name). This will be done by another service, yet to be
 implemented.
+
+## Components
+
+This repository doesn't contain any code, but acts as a starting point
+and guide to the different components that make up the system. The
+following services currently exist:
+
+- [speicherstadt-chunks-fs][]: An implementation of the chunk storage
+  service that stores data on the local filesystem.
+
+[speicherstadt-chunks-fs]: https://github.com/christianberg/speicherstadt-chunks-fs
 
 ## Examples
 
@@ -63,55 +74,10 @@ curl http://localhost:3000/chunks/sha256-a591a6d40bf420404a011733cfb7b190d62c65b
 Hello World
 ```
 
-## Developing
-
-### Setup
-
-When you first clone this repository, run:
-
-```sh
-lein setup
-```
-
-This will create files for local configuration, and prep your system
-for the project.
-
-### Environment
-
-To begin developing, start with a REPL.
-
-```sh
-lein repl
-```
-
-Run `go` to initiate and start the system.
-
-```clojure
-user=> (go)
-:started
-```
-
-By default this creates a web server at <http://localhost:3000>.
-
-When you make changes to your source files, use `reset` to reload any
-modified files and restart the server.
-
-```clojure
-user=> (reset)
-:reloading (...)
-:started
-```
-
-## Deploying
-
-You can use the included Dockerfile to build a Docker image running
-the chunk service. The service is running on port 8080, data is stored
-on a data volume, which you can attach to the container in order to
-preserve data across container instantiations.
 
 ## Legal
 
-Copyright © 2016 Christian Berg
+Copyright © 2016,2017 Christian Berg
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
