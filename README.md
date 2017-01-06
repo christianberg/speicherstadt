@@ -11,8 +11,6 @@ performance - this remains to be seen.
 
 [Camlistore]: http://camlistore.org/
 
-[![Build Status](https://travis-ci.org/christianberg/speicherstadt.svg?branch=master)](https://travis-ci.org/christianberg/speicherstadt) [![Dependency Status](https://www.versioneye.com/user/projects/568189c3eb4f47003c0008bd/badge.svg?style=flat)](https://www.versioneye.com/user/projects/568189c3eb4f47003c0008bd)
-
 ## Current status
 
 Not much is there yet. Currently only the `chunks` service exists,
@@ -33,6 +31,8 @@ following services currently exist:
 
 - [speicherstadt-chunks-fs][]: An implementation of the chunk storage
   service that stores data on the local filesystem.
+  [![Travis](https://img.shields.io/travis/christianberg/speicherstadt-chunks-fs.svg)](https://travis-ci.org/christianberg/speicherstadt-chunks-fs)
+  [![Docker Automated Build](https://img.shields.io/docker/automated/christianberg/speicherstadt-chunks-fs.svg)](https://hub.docker.com/r/christianberg/speicherstadt-chunks-fs/)
 
 [speicherstadt-chunks-fs]: https://github.com/christianberg/speicherstadt-chunks-fs
 
