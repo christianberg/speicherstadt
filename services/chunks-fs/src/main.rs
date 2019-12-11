@@ -1,8 +1,11 @@
+extern crate iron;
 #[macro_use]
 extern crate slog;
 extern crate slog_async;
 extern crate slog_term;
 
+use iron::prelude::*;
+use iron::status;
 use slog::Drain;
 
 fn root_logger() -> slog::Logger {
@@ -14,5 +17,12 @@ fn root_logger() -> slog::Logger {
 
 fn main() {
     let logger = root_logger();
-    info!(logger, "Hello, world!");
+    info!(logger, "Service starting");
+
+    let _server = Iron::new(move |_: &mut Request| -> IronResult<Response> {
+        debug!(logger, "Serving hello request");
+        Ok(Response::with((status::Ok, "Hello world!")))
+    })
+    .http("localhost:3000")
+    .unwrap();
 }
