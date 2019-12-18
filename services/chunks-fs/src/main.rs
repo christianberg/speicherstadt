@@ -15,14 +15,23 @@ fn root_logger() -> slog::Logger {
     slog::Logger::root(drain, o!("service" => "chunks-fs"))
 }
 
+struct Service {}
+
+impl Service {
+    fn new(root_logger: slog::Logger) -> Self {
+        let logger = root_logger.new(o!());
+        Iron::new(move |_: &mut Request| -> IronResult<Response> {
+            debug!(logger, "Serving hello request");
+            Ok(Response::with((status::Ok, "Hello world!")))
+        })
+        .http("localhost:3000")
+        .unwrap();
+        Self {}
+    }
+}
+
 fn main() {
     let logger = root_logger();
     info!(logger, "Service starting");
-
-    let _server = Iron::new(move |_: &mut Request| -> IronResult<Response> {
-        debug!(logger, "Serving hello request");
-        Ok(Response::with((status::Ok, "Hello world!")))
-    })
-    .http("localhost:3000")
-    .unwrap();
+    let _service = Service::new(logger);
 }
