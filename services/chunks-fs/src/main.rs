@@ -18,5 +18,5 @@ fn root_logger() -> slog::Logger {
 fn main() {
     let logger = root_logger();
     info!(logger, "Service starting");
-    let _service = Service::new(logger);
+    let _service = Service::new();
 }
