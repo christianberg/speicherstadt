@@ -5,7 +5,7 @@ extern crate slog;
 extern crate slog_async;
 extern crate slog_term;
 
-use chunks_fs::Service;
+use chunks_fs::ChunkHandler;
 use iron::Iron;
 use slog::Drain;
 
@@ -19,5 +19,5 @@ fn root_logger() -> slog::Logger {
 fn main() {
     let logger = root_logger();
     info!(logger, "Service starting");
-    Iron::new(Service {}).http("localhost:3000").unwrap();
+    Iron::new(ChunkHandler {}).http("localhost:3000").unwrap();
 }

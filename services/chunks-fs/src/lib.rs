@@ -4,9 +4,9 @@ use iron::prelude::*;
 use iron::status;
 use iron::Handler;
 
-pub struct Service {}
+pub struct ChunkHandler {}
 
-impl Handler for Service {
+impl Handler for ChunkHandler {
     fn handle(&self, _req: &mut Request) -> IronResult<Response> {
         Ok(Response::with((status::Ok, "Hello world!")))
     }
