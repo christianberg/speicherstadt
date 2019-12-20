@@ -1,11 +1,11 @@
-pub mod chunks;
+extern crate chunks_fs;
 
 #[macro_use]
 extern crate slog;
 extern crate slog_async;
 extern crate slog_term;
 
-use chunks::Service;
+use chunks_fs::Service;
 use iron::Iron;
 use slog::Drain;
 
