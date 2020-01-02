@@ -20,6 +20,6 @@ impl Server {
     pub fn start(&self) {
         Iron::new(ChunkHandler {})
             .http(("localhost", self.port))
-            .unwrap();
+            .expect("Unable to start server");
     }
 }
