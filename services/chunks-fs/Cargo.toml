@@ -11,3 +11,8 @@ iron = "~0.6"
 slog = "~2"
 slog-term = "~2"
 slog-async = "~2"
+
+[dev-dependencies]
+duct = "~0.13"
+reqwest = "~0.9"
+
