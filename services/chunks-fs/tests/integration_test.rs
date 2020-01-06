@@ -7,9 +7,10 @@ struct TestServer {
 }
 
 impl TestServer {
-    fn new() -> Self {
+    fn new(port: u16) -> Self {
         let handle = {
             let server = cmd!("../../target/debug/chunks-fs")
+                .env("PORT", format!("{}", port))
                 .unchecked()
                 .stderr_capture()
                 .start()
@@ -42,7 +43,7 @@ impl TestServer {
 
 #[test]
 fn hello_world() {
-    let server = TestServer::new();
+    let server = TestServer::new(3000);
     let text = reqwest::get("http://localhost:3000/")
         .unwrap()
         .text()

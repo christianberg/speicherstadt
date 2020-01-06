@@ -11,6 +11,7 @@ iron = "~0.6"
 slog = "~2"
 slog-term = "~2"
 slog-async = "~2"
+structopt = "~0.3"
 
 [dev-dependencies]
 duct = "~0.13"
