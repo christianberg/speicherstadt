@@ -26,5 +26,5 @@ fn main() {
     let config = Config::from_args();
     let logger = root_logger();
     info!(logger, "Service starting on port {}", config.port);
-    start_server(config.port);
+    start_server(config.port, &logger);
 }
