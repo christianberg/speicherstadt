@@ -5,7 +5,7 @@ extern crate slog;
 extern crate slog_async;
 extern crate slog_term;
 
-use chunks_fs::Server;
+use chunks_fs::start_server;
 use slog::Drain;
 use structopt::StructOpt;
 
@@ -26,5 +26,5 @@ fn main() {
     let config = Config::from_args();
     let logger = root_logger();
     info!(logger, "Service starting on port {}", config.port);
-    (Server { port: config.port }).start();
+    start_server(config.port);
 }
