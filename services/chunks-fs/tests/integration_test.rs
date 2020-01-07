@@ -12,6 +12,7 @@ impl TestServer {
         let handle = {
             let server = cmd!("../../target/debug/chunks-fs")
                 .env("PORT", format!("{}", port))
+                .env("BASE_DIR", "./tmp")
                 .unchecked()
                 .stderr_capture()
                 .start()

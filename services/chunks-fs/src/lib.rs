@@ -8,7 +8,7 @@ use iron::status;
 use router::Router;
 use slog::Logger;
 
-pub fn start_server(port: u16, parent_logger: &Logger) {
+pub fn start_server(port: u16, base_dir: std::path::PathBuf, parent_logger: &Logger) {
     let hello_logger = parent_logger.new(o!("route" => "hello"));
     let put_chunk_logger = parent_logger.new(o!("route" => "put_chunk"));
     let mut router = Router::new();
