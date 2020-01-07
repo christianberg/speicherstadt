@@ -1,6 +1,7 @@
 extern crate chunks_fs;
 use duct::cmd;
 use reqwest;
+use std::io::Read;
 
 struct TestServer {
     handle: duct::Handle,
@@ -43,11 +44,28 @@ impl TestServer {
 
 #[test]
 fn hello_world() {
-    let server = TestServer::new(3000);
-    let text = reqwest::get("http://localhost:3000/")
+    let server = TestServer::new(3001);
+    let text = reqwest::get("http://localhost:3001/")
         .unwrap()
         .text()
         .unwrap();
     assert_eq!(text, "Hello world!");
+    server.stop();
+}
+
+#[test]
+#[ignore]
+fn upload_chunk() {
+    let server = TestServer::new(3002);
+    let input: Vec<u8> = vec![1, 10, 100];
+    let url = "http://localhost:3002/chunks/sha256/0123456abc";
+    let client = reqwest::Client::new();
+    let put_result = client.put(url).body(input.clone()).send().unwrap();
+    assert!(put_result.status().is_success());
+    let mut get_result = client.get(url).send().unwrap();
+    assert!(get_result.status().is_success());
+    let mut output = Vec::new();
+    get_result.read_to_end(&mut output).unwrap();
+    assert_eq!(input, output);
     server.stop();
 }
