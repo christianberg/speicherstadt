@@ -17,4 +17,4 @@ structopt = "~0.3"
 [dev-dependencies]
 duct = "~0.13"
 reqwest = "~0.9"
-
+tempfile = "~3"

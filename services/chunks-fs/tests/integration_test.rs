@@ -5,14 +5,17 @@ use std::io::Read;
 
 struct TestServer {
     handle: duct::Handle,
+    base_dir: tempfile::TempDir,
 }
 
 impl TestServer {
     fn new(port: u16) -> Self {
+        let base_dir = tempfile::tempdir().unwrap();
+        println!("{:?}", base_dir);
         let handle = {
             let server = cmd!("../../target/debug/chunks-fs")
                 .env("PORT", format!("{}", port))
-                .env("BASE_DIR", "./tmp")
+                .env("BASE_DIR", base_dir.path().as_os_str())
                 .unchecked()
                 .stderr_capture()
                 .start()
@@ -35,7 +38,7 @@ impl TestServer {
             };
             server
         };
-        Self { handle }
+        Self { handle, base_dir }
     }
 
     fn stop(self) {
@@ -55,7 +58,6 @@ fn hello_world() {
 }
 
 #[test]
-#[ignore]
 fn upload_chunk() {
     let server = TestServer::new(3002);
     let input: Vec<u8> = vec![1, 10, 100];
