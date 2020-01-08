@@ -8,18 +8,29 @@ use iron::status;
 use router::Router;
 use slog::Logger;
 
+struct HelloHandler {
+    logger: Logger,
+}
+
+impl HelloHandler {
+    fn new(parent_logger: &Logger) -> Self {
+        Self {
+            logger: parent_logger.new(o!("route"=>"hello")),
+        }
+    }
+}
+
+impl iron::Handler for HelloHandler {
+    fn handle(&self, _req: &mut Request) -> IronResult<Response> {
+        info!(self.logger, "Handling hello request");
+        Ok(Response::with((status::Ok, "Hello world!")))
+    }
+}
+
 pub fn start_server(port: u16, base_dir: std::path::PathBuf, parent_logger: &Logger) {
-    let hello_logger = parent_logger.new(o!("route" => "hello"));
     let put_chunk_logger = parent_logger.new(o!("route" => "put_chunk"));
     let mut router = Router::new();
-    router.get(
-        "/",
-        move |_req: &mut Request| -> IronResult<Response> {
-            info!(hello_logger, "Handling hello request");
-            Ok(Response::with((status::Ok, "Hello world!")))
-        },
-        "hello",
-    );
+    router.get("/", HelloHandler::new(parent_logger), "hello");
     router.put(
         "/chunks/sha256/:hash",
         move |req: &mut Request| -> IronResult<Response> {
