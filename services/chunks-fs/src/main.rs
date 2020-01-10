@@ -28,5 +28,5 @@ fn main() {
     let config = Config::from_args();
     let logger = root_logger();
     info!(logger, "Service starting on port {}", config.port);
-    start_server(config.port, config.base_dir, &logger);
+    start_server(config.port, config.base_dir, &logger).expect("Server start failed.");
 }

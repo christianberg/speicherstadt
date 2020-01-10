@@ -60,6 +60,8 @@ fn handle_get(req: &mut Request) -> IronResult<Response> {
 
 struct Storage {
     data_dir: PathBuf,
+    partial_dir: PathBuf,
+    logger: Logger,
 }
 
 impl iron::typemap::Key for Storage {
@@ -68,31 +70,51 @@ impl iron::typemap::Key for Storage {
 
 impl BeforeMiddleware for Storage {
     fn before(&self, req: &mut Request) -> IronResult<()> {
-        req.extensions.insert::<Storage>(ChunkStorer {
-            data_dir: self.data_dir.clone(),
-        });
+        req.extensions.insert::<Storage>(self.get_storer());
         Ok(())
     }
 }
 
 impl Storage {
-    fn new(base_dir: PathBuf) -> Self {
+    fn new(base_dir: PathBuf, parent_logger: &Logger) -> std::io::Result<Self> {
+        let logger = parent_logger.new(o!("component"=>"storage"));
+        info!(logger, "Initializing Storage with base dir {:?}", base_dir);
         assert!(base_dir.is_dir());
         let mut data_dir = base_dir.clone();
         data_dir.push("data");
         if !data_dir.exists() {
-            std::fs::create_dir(&data_dir).unwrap();
+            info!(logger, "Creating directory {:?}", data_dir);
+            std::fs::create_dir(&data_dir)?;
         }
         data_dir.push("sha256");
         if !data_dir.exists() {
-            std::fs::create_dir(&data_dir).unwrap();
+            info!(logger, "Creating directory {:?}", data_dir);
+            std::fs::create_dir(&data_dir)?;
         }
-        Self { data_dir }
+        let mut partial_dir = base_dir.clone();
+        partial_dir.push("partial");
+        if !partial_dir.exists() {
+            info!(logger, "Creating directory {:?}", partial_dir);
+            std::fs::create_dir(&partial_dir)?;
+        }
+        Ok(Self {
+            data_dir,
+            partial_dir,
+            logger,
+        })
+    }
+
+    fn get_storer(&self) -> ChunkStorer {
+        ChunkStorer {
+            data_dir: self.data_dir.clone(),
+            logger: self.logger.new(o!()),
+        }
     }
 }
 
 struct ChunkStorer {
     data_dir: PathBuf,
+    logger: Logger,
 }
 
 impl ChunkStorer {
@@ -103,12 +125,12 @@ impl ChunkStorer {
     }
 
     fn store_chunk(&self, hash: &str, content: &mut dyn std::io::Read) -> std::io::Result<()> {
-        //        debug!(self.logger, "Storing chunk {}", hash);
+        debug!(self.logger, "Storing chunk {}", hash);
         let path = self.path_for_hash(hash);
-        //        debug!(self.logger, "Storage location: {:?}", path);
+        debug!(self.logger, "Storage location: {:?}", path);
         let file = &mut std::fs::File::create(path)?;
         std::io::copy(content, file).map(|size| {
-            //            debug!(self.logger, "{} bytes written", size);
+            debug!(self.logger, "{} bytes written", size);
         })
     }
 
@@ -118,9 +140,9 @@ impl ChunkStorer {
     }
 }
 
-pub fn start_server(port: u16, base_dir: PathBuf, logger: &Logger) {
+pub fn start_server(port: u16, base_dir: PathBuf, logger: &Logger) -> Result<(), std::io::Error> {
     let mut router = Router::new();
-    let storage = Storage::new(base_dir);
+    let storage = Storage::new(base_dir, logger)?;
     router.get("/", HelloHandler::new(logger), "hello");
     router.get("/chunks/sha256/:hash", handle_get, "chunks_get");
     router.put("/chunks/sha256/:hash", handle_put, "chunks_put");
@@ -129,4 +151,5 @@ pub fn start_server(port: u16, base_dir: PathBuf, logger: &Logger) {
     Iron::new(chain)
         .http(("localhost", port))
         .expect("Unable to start server");
+    Ok(())
 }
