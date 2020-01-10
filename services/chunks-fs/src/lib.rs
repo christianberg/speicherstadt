@@ -77,11 +77,16 @@ impl BeforeMiddleware for Storage {
 
 impl Storage {
     fn new(base_dir: PathBuf) -> Self {
+        assert!(base_dir.is_dir());
         let mut data_dir = base_dir.clone();
         data_dir.push("data");
-        std::fs::create_dir(&data_dir).unwrap();
+        if !data_dir.exists() {
+            std::fs::create_dir(&data_dir).unwrap();
+        }
         data_dir.push("sha256");
-        std::fs::create_dir(&data_dir).unwrap();
+        if !data_dir.exists() {
+            std::fs::create_dir(&data_dir).unwrap();
+        }
         Self { data_dir }
     }
 }
