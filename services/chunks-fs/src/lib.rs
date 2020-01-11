@@ -107,6 +107,7 @@ impl Storage {
     fn get_storer(&self) -> ChunkStorer {
         ChunkStorer {
             data_dir: self.data_dir.clone(),
+            partial_dir: self.partial_dir.clone(),
             logger: self.logger.new(o!()),
         }
     }
@@ -114,28 +115,38 @@ impl Storage {
 
 struct ChunkStorer {
     data_dir: PathBuf,
+    partial_dir: PathBuf,
     logger: Logger,
 }
 
 impl ChunkStorer {
-    fn path_for_hash(&self, hash: &str) -> PathBuf {
+    fn path_for_hash(&self, hash: &str) -> std::io::Result<PathBuf> {
+        assert_eq!(hash.len(), 64);
+        let shard = hash.get(0..2).unwrap();
         let mut path = self.data_dir.clone();
-        path.push(hash);
-        path
+        path.push(shard);
+        if !path.exists() {
+            info!(self.logger, "Creating directory {:?}", path);
+            std::fs::create_dir(&path)?;
+        }
+        path.push(format!("sha256-{}", hash));
+        Ok(path)
     }
 
     fn store_chunk(&self, hash: &str, content: &mut dyn std::io::Read) -> std::io::Result<()> {
         debug!(self.logger, "Storing chunk {}", hash);
-        let path = self.path_for_hash(hash);
-        debug!(self.logger, "Storage location: {:?}", path);
-        let file = &mut std::fs::File::create(path)?;
-        std::io::copy(content, file).map(|size| {
+        let upload_file = &mut tempfile::NamedTempFile::new_in(&self.partial_dir)?;
+        std::io::copy(content, upload_file).map(|size| {
             debug!(self.logger, "{} bytes written", size);
+        })?;
+        let path = self.path_for_hash(hash)?;
+        std::fs::rename(upload_file, &path).map(|_| {
+            debug!(self.logger, "Chunk stored: {:?}", path);
         })
     }
 
     fn retrieve_chunk(&self, hash: &str) -> std::io::Result<std::fs::File> {
-        let path = self.path_for_hash(hash);
+        let path = self.path_for_hash(hash)?;
         std::fs::File::open(path)
     }
 }
