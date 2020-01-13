@@ -40,8 +40,10 @@ impl TestServer {
         };
         Self { handle, base_dir }
     }
+}
 
-    fn stop(self) {
+impl Drop for TestServer {
+    fn drop(&mut self) {
         self.handle.kill().unwrap();
     }
 }
@@ -54,7 +56,6 @@ fn hello_world() {
         .text()
         .unwrap();
     assert_eq!(text, "Hello world!");
-    server.stop();
 }
 
 #[test]
@@ -70,5 +71,4 @@ fn upload_chunk() {
     let mut output = Vec::new();
     get_result.read_to_end(&mut output).unwrap();
     assert_eq!(input, output);
-    server.stop();
 }
