@@ -1,5 +1,6 @@
 [workspace]
 
 members = [
+  "services/blob",
   "services/chunks-fs"
 ]
