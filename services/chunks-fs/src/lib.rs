@@ -10,25 +10,6 @@ use router::Router;
 use slog::Logger;
 use std::path::PathBuf;
 
-struct HelloHandler {
-    logger: Logger,
-}
-
-impl HelloHandler {
-    fn new(parent_logger: &Logger) -> Self {
-        Self {
-            logger: parent_logger.new(o!("route"=>"hello")),
-        }
-    }
-}
-
-impl iron::Handler for HelloHandler {
-    fn handle(&self, _req: &mut Request) -> IronResult<Response> {
-        info!(self.logger, "Handling hello request");
-        Ok(Response::with((status::Ok, "Hello world!")))
-    }
-}
-
 fn handle_put(req: &mut Request) -> IronResult<Response> {
     let storage = req.extensions.get::<Storage>().unwrap();
     match storage.store_chunk(
@@ -154,7 +135,6 @@ impl ChunkStorer {
 pub fn start_server(port: u16, base_dir: PathBuf, logger: &Logger) -> Result<(), std::io::Error> {
     let mut router = Router::new();
     let storage = Storage::new(base_dir, logger)?;
-    router.get("/", HelloHandler::new(logger), "hello");
     router.get("/chunks/sha256/:hash", handle_get, "chunks_get");
     router.put("/chunks/sha256/:hash", handle_put, "chunks_put");
     let mut chain = Chain::new(router);

@@ -49,16 +49,6 @@ impl Drop for TestServer {
 }
 
 #[test]
-fn hello_world() {
-    let server = TestServer::new(3001);
-    let text = reqwest::get("http://localhost:3001/")
-        .unwrap()
-        .text()
-        .unwrap();
-    assert_eq!(text, "Hello world!");
-}
-
-#[test]
 fn upload_chunk() {
     let server = TestServer::new(3002);
     let input: Vec<u8> = "hello world".as_bytes().to_vec();
