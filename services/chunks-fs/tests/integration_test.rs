@@ -5,7 +5,7 @@ use std::io::Read;
 
 struct TestServer {
     handle: duct::Handle,
-    base_dir: tempfile::TempDir,
+    _base_dir: tempfile::TempDir,
 }
 
 impl TestServer {
@@ -38,7 +38,10 @@ impl TestServer {
             };
             server
         };
-        Self { handle, base_dir }
+        Self {
+            handle,
+            _base_dir: base_dir,
+        }
     }
 }
 
@@ -50,7 +53,7 @@ impl Drop for TestServer {
 
 #[test]
 fn upload_chunk() {
-    let server = TestServer::new(3002);
+    let _server = TestServer::new(3002);
     let input: Vec<u8> = "hello world".as_bytes().to_vec();
     let url = "http://localhost:3002/chunks/sha256/b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9";
     let client = reqwest::Client::new();

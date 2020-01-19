@@ -55,7 +55,7 @@ mod tests {
     #[test]
     fn constant_size_larger_than_input() {
         let input = "Short data";
-        let mut source = input.as_bytes();
+        let source = input.as_bytes();
         let mut csc = ConstantSizeChunker::new(source, 2000);
         assert_eq!(csc.next(), Some(()));
         let mut output = String::new();
@@ -67,7 +67,7 @@ mod tests {
     #[test]
     fn constant_size_is_one() {
         let input = "abc";
-        let mut source = input.as_bytes();
+        let source = input.as_bytes();
         let mut csc = ConstantSizeChunker::new(source, 1);
 
         for expected_chunk in ["a", "b", "c", ""].iter() {
@@ -84,7 +84,7 @@ mod tests {
     #[test]
     fn constant_size_is_two() {
         let input = "abcde";
-        let mut source = input.as_bytes();
+        let source = input.as_bytes();
         let mut csc = ConstantSizeChunker::new(source, 2);
 
         for expected_chunk in ["ab", "cd", "e"].iter() {
@@ -101,7 +101,7 @@ mod tests {
     #[test]
     fn constant_size_is_three() {
         let input = "abcde";
-        let mut source = input.as_bytes();
+        let source = input.as_bytes();
         let mut csc = ConstantSizeChunker::new(source, 3);
 
         for expected_chunk in ["abc", "de"].iter() {
