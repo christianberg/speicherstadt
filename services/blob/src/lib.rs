@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::io::{Error, Read};
 
 struct ConstantSizeChunker<R> {
@@ -45,6 +46,26 @@ impl<R: Read> Iterator for ConstantSizeChunker<R> {
             self.counter = 0;
             Some(())
         }
+    }
+}
+
+trait ChunkStore {
+    fn store(&mut self, content: Vec<u8>) -> std::io::Result<String>;
+}
+
+struct BlobStore<C> {
+    chunk_store: C,
+}
+
+impl<C: ChunkStore> BlobStore<C> {
+    fn new(chunk_store: C) -> Self {
+        Self { chunk_store }
+    }
+
+    fn store(&mut self, mut r: impl Read) -> std::io::Result<String> {
+        let mut chunk: Vec<u8> = vec![];
+        std::io::copy(&mut r, &mut chunk)?;
+        self.chunk_store.store(chunk)
     }
 }
 
@@ -113,5 +134,37 @@ mod tests {
         }
 
         assert_eq!(csc.next(), None);
+    }
+
+    struct ChunkStoreFake {
+        chunks: HashMap<String, Vec<u8>>,
+    }
+
+    impl ChunkStoreFake {
+        fn new() -> Self {
+            Self {
+                chunks: HashMap::new(),
+            }
+        }
+    }
+
+    impl ChunkStore for ChunkStoreFake {
+        fn store(&mut self, content: Vec<u8>) -> std::io::Result<String> {
+            let key = "foo".to_string();
+            self.chunks.insert(key.clone(), content);
+            Ok(key)
+        }
+    }
+
+    #[test]
+    fn store_blob() {
+        let input = "This is my important payload";
+        let reader = input.as_bytes();
+
+        let mut store = BlobStore::new(ChunkStoreFake::new());
+        let result = store.store(reader).unwrap();
+
+        assert_eq!(result, "foo");
+        assert!(store.chunk_store.chunks.contains_key("foo"));
     }
 }
