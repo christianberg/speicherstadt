@@ -38,13 +38,22 @@ impl<R: Read> Read for ConstantSizeChunker<R> {
 }
 
 impl<R: Read> Iterator for ConstantSizeChunker<R> {
-    type Item = ();
-    fn next(&mut self) -> Option<()> {
+    type Item = std::io::Result<Vec<u8>>;
+    fn next(&mut self) -> Option<Self::Item> {
         if self.inner_consumed {
             None
         } else {
-            self.counter = 0;
-            Some(())
+            let mut next_chunk = Vec::<u8>::new();
+            let mut buffer = vec![0u8; 1024]; // FIXME: use a sensible buffer size
+            loop {
+                match self.inner.read(buffer.as_mut_slice()) {
+                    Ok(0) => break Some(Ok(next_chunk)),
+                    Ok(length) => {
+                        next_chunk.extend_from_slice(&buffer[..length]);
+                    }
+                    Err(e) => break Some(std::io::Result::Err(e)),
+                }
+            }
         }
     }
 }
@@ -74,66 +83,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn constant_size_larger_than_input() {
-        let input = "Short data";
-        let source = input.as_bytes();
-        let mut csc = ConstantSizeChunker::new(source, 2000);
-        assert_eq!(csc.next(), Some(()));
-        let mut output = String::new();
-        csc.read_to_string(&mut output).unwrap();
-        assert_eq!(input, output);
-        assert_eq!(csc.next(), None);
-    }
-
-    #[test]
-    fn constant_size_is_one() {
-        let input = "abc";
-        let source = input.as_bytes();
-        let mut csc = ConstantSizeChunker::new(source, 1);
-
-        for expected_chunk in ["a", "b", "c", ""].iter() {
-            assert_eq!(csc.next(), Some(()));
-            let mut output = String::new();
-            csc.read_to_string(&mut output).unwrap();
-            assert_eq!(output, *expected_chunk);
-            assert_eq!(csc.read(&mut [0, 0, 0]).unwrap(), 0);
-        }
-
-        assert_eq!(csc.next(), None);
-    }
-
-    #[test]
-    fn constant_size_is_two() {
-        let input = "abcde";
-        let source = input.as_bytes();
-        let mut csc = ConstantSizeChunker::new(source, 2);
-
-        for expected_chunk in ["ab", "cd", "e"].iter() {
-            assert_eq!(csc.next(), Some(()));
-            let mut output = String::new();
-            csc.read_to_string(&mut output).unwrap();
-            assert_eq!(output, *expected_chunk);
-            assert_eq!(csc.read(&mut [0, 0, 0]).unwrap(), 0);
-        }
-
-        assert_eq!(csc.next(), None);
-    }
-
-    #[test]
-    fn constant_size_is_three() {
-        let input = "abcde";
-        let source = input.as_bytes();
-        let mut csc = ConstantSizeChunker::new(source, 3);
-
-        for expected_chunk in ["abc", "de"].iter() {
-            assert_eq!(csc.next(), Some(()));
-            let mut output = String::new();
-            csc.read_to_string(&mut output).unwrap();
-            assert_eq!(output, *expected_chunk);
-            assert_eq!(csc.read(&mut [0, 0, 0]).unwrap(), 0);
-        }
-
-        assert_eq!(csc.next(), None);
+    fn whole_input_fits_in_one_chunk() {
+        let input = vec![1, 2, 3];
+        let mut csc = ConstantSizeChunker::new(input.as_slice(), 4);
+        let chunk = csc.next().unwrap().unwrap();
+        assert_eq!(chunk, input);
     }
 
     struct ChunkStoreFake {
