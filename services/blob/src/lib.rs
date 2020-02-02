@@ -19,24 +19,6 @@ impl<R: Read> ConstantSizeChunker<R> {
     }
 }
 
-impl<R: Read> Read for ConstantSizeChunker<R> {
-    fn read(&mut self, buffer: &mut [u8]) -> Result<usize, Error> {
-        if self.counter == self.chunk_size {
-            return Ok(0);
-        }
-        let bytes_to_read = std::cmp::min(buffer.len(), self.chunk_size - self.counter);
-        let buffer_slice = &mut buffer[..bytes_to_read];
-        let result = self.inner.read(buffer_slice);
-        if let Ok(bytes_read) = result {
-            self.counter += bytes_read;
-            if bytes_read == 0 {
-                self.inner_consumed = true;
-            }
-        }
-        result
-    }
-}
-
 impl<R: Read> Iterator for ConstantSizeChunker<R> {
     type Item = std::io::Result<Vec<u8>>;
     fn next(&mut self) -> Option<Self::Item> {
