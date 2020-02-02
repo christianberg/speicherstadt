@@ -87,6 +87,26 @@ mod tests {
         assert!(csc.next().is_none());
     }
 
+    #[test]
+    fn input_size_equals_chunk_size() {
+        let input = vec![1, 2, 3];
+        let mut csc = ConstantSizeChunker::new(input.as_slice(), 3);
+        let chunk = csc.next().unwrap().unwrap();
+        assert_eq!(chunk, input);
+        assert!(csc.next().is_none());
+    }
+
+    #[test]
+    fn input_can_be_reassembled_from_chunks() {
+        let input = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+        let mut csc = ConstantSizeChunker::new(input.as_slice(), 3);
+        let mut output = vec![];
+        for chunk in csc {
+            output.extend(chunk.unwrap());
+        }
+        assert_eq!(input, output);
+    }
+
     struct ChunkStoreFake {
         chunks: HashMap<String, Vec<u8>>,
     }
