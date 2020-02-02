@@ -3,7 +3,6 @@ use std::io::{Error, Read};
 
 struct ConstantSizeChunker<R> {
     inner: R,
-    inner_consumed: bool,
     chunk_size: usize,
     counter: usize,
 }
@@ -12,7 +11,6 @@ impl<R: Read> ConstantSizeChunker<R> {
     fn new(inner: R, chunk_size: usize) -> Self {
         Self {
             inner,
-            inner_consumed: false,
             chunk_size,
             counter: 0,
         }
@@ -22,19 +20,21 @@ impl<R: Read> ConstantSizeChunker<R> {
 impl<R: Read> Iterator for ConstantSizeChunker<R> {
     type Item = std::io::Result<Vec<u8>>;
     fn next(&mut self) -> Option<Self::Item> {
-        if self.inner_consumed {
-            None
-        } else {
-            let mut next_chunk = Vec::<u8>::new();
-            let mut buffer = vec![0u8; 1024]; // FIXME: use a sensible buffer size
-            loop {
-                match self.inner.read(buffer.as_mut_slice()) {
-                    Ok(0) => break Some(Ok(next_chunk)),
-                    Ok(length) => {
-                        next_chunk.extend_from_slice(&buffer[..length]);
+        let mut next_chunk = Vec::<u8>::new();
+        let mut buffer = vec![0u8; 1024]; // FIXME: use a sensible buffer size
+        loop {
+            match self.inner.read(buffer.as_mut_slice()) {
+                Ok(0) => {
+                    if next_chunk.is_empty() {
+                        break None;
+                    } else {
+                        break Some(Ok(next_chunk));
                     }
-                    Err(e) => break Some(std::io::Result::Err(e)),
                 }
+                Ok(length) => {
+                    next_chunk.extend_from_slice(&buffer[..length]);
+                }
+                Err(e) => break Some(std::io::Result::Err(e)),
             }
         }
     }
@@ -70,6 +70,7 @@ mod tests {
         let mut csc = ConstantSizeChunker::new(input.as_slice(), 4);
         let chunk = csc.next().unwrap().unwrap();
         assert_eq!(chunk, input);
+        assert!(csc.next().is_none());
     }
 
     struct ChunkStoreFake {
