@@ -4,16 +4,11 @@ use std::io::{Error, Read};
 struct ConstantSizeChunker<R> {
     inner: R,
     chunk_size: usize,
-    counter: usize,
 }
 
 impl<R: Read> ConstantSizeChunker<R> {
     fn new(inner: R, chunk_size: usize) -> Self {
-        Self {
-            inner,
-            chunk_size,
-            counter: 0,
-        }
+        Self { inner, chunk_size }
     }
 }
 
@@ -21,9 +16,16 @@ impl<R: Read> Iterator for ConstantSizeChunker<R> {
     type Item = std::io::Result<Vec<u8>>;
     fn next(&mut self) -> Option<Self::Item> {
         let mut next_chunk = Vec::<u8>::new();
-        let mut buffer = vec![0u8; 1024]; // FIXME: use a sensible buffer size
+        // An 8kB read buffer is used (same as the default buffer size
+        // of BufReader), unless the chunk size is smaller
+        let mut buffer = vec![0u8; std::cmp::min(self.chunk_size, 8192)];
+        let mut bytes_remaining = self.chunk_size;
+        let mut slice = buffer.as_mut_slice();
         loop {
-            match self.inner.read(buffer.as_mut_slice()) {
+            if bytes_remaining < slice.len() {
+                slice = &mut slice[..bytes_remaining];
+            }
+            match self.inner.read(slice) {
                 Ok(0) => {
                     if next_chunk.is_empty() {
                         break None;
@@ -32,7 +34,8 @@ impl<R: Read> Iterator for ConstantSizeChunker<R> {
                     }
                 }
                 Ok(length) => {
-                    next_chunk.extend_from_slice(&buffer[..length]);
+                    next_chunk.extend_from_slice(&slice[..length]);
+                    bytes_remaining -= length;
                 }
                 Err(e) => break Some(std::io::Result::Err(e)),
             }
@@ -70,6 +73,17 @@ mod tests {
         let mut csc = ConstantSizeChunker::new(input.as_slice(), 4);
         let chunk = csc.next().unwrap().unwrap();
         assert_eq!(chunk, input);
+        assert!(csc.next().is_none());
+    }
+
+    #[test]
+    fn input_is_split_into_two_chunks() {
+        let input = vec![1, 2, 3];
+        let mut csc = ConstantSizeChunker::new(input.as_slice(), 2);
+        let chunk1 = csc.next().unwrap().unwrap();
+        assert_eq!(chunk1, vec![1, 2]);
+        let chunk2 = csc.next().unwrap().unwrap();
+        assert_eq!(chunk2, vec![3]);
         assert!(csc.next().is_none());
     }
 
