@@ -44,7 +44,7 @@ impl<R: Read> Iterator for ConstantSizeChunker<R> {
 }
 
 trait ChunkStore {
-    fn store(&mut self, content: Vec<u8>) -> std::io::Result<String>;
+    fn store(&mut self, key: &str, content: Vec<u8>) -> std::io::Result<String>;
 }
 
 struct BlobStore<C> {
@@ -59,7 +59,7 @@ impl<C: ChunkStore> BlobStore<C> {
     fn store(&mut self, mut r: impl Read) -> std::io::Result<String> {
         let mut chunk: Vec<u8> = vec![];
         std::io::copy(&mut r, &mut chunk)?;
-        self.chunk_store.store(chunk)
+        self.chunk_store.store("foo", chunk)
     }
 }
 
@@ -120,8 +120,8 @@ mod tests {
     }
 
     impl ChunkStore for ChunkStoreFake {
-        fn store(&mut self, content: Vec<u8>) -> std::io::Result<String> {
-            let key = "foo".to_string();
+        fn store(&mut self, key: &str, content: Vec<u8>) -> std::io::Result<String> {
+            let key = key.to_string();
             self.chunks.insert(key.clone(), content);
             Ok(key)
         }
