@@ -1,5 +1,20 @@
+use multihash::{encode, Hash, Multihash};
 use std::collections::HashMap;
 use std::io::{Error, Read};
+
+struct ChunkRef {
+    length: usize,
+    hash: Multihash,
+}
+
+impl ChunkRef {
+    fn from_bytes(content: &[u8]) -> Self {
+        Self {
+            length: content.len(),
+            hash: encode(Hash::SHA2256, content).unwrap(),
+        }
+    }
+}
 
 struct ConstantSizeChunker<R> {
     inner: R,
@@ -105,6 +120,25 @@ mod tests {
             output.extend(chunk.unwrap());
         }
         assert_eq!(input, output);
+    }
+
+    #[test]
+    fn chunk_ref_shows_length() {
+        let cr = ChunkRef::from_bytes("hello world".as_bytes());
+        assert_eq!(cr.length, 11);
+    }
+
+    #[test]
+    fn chunk_ref_shows_hash() {
+        let cr = ChunkRef::from_bytes("hello world".as_bytes());
+        assert_eq!(
+            cr.hash,
+            Multihash::from_bytes(vec![
+                18, 32, 185, 77, 39, 185, 147, 77, 62, 8, 165, 46, 82, 215, 218, 125, 171, 250,
+                196, 132, 239, 227, 122, 83, 128, 238, 144, 136, 247, 172, 226, 239, 205, 233
+            ])
+            .unwrap()
+        );
     }
 
     struct ChunkStoreFake {
