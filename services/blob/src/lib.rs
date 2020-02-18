@@ -62,7 +62,7 @@ impl<R: Read> Iterator for ConstantSizeChunker<R> {
 }
 
 trait ChunkStore {
-    fn store(&mut self, key: &str, content: Vec<u8>) -> std::io::Result<String>;
+    fn store(&mut self, chunk: &Chunk) -> std::io::Result<String>;
 }
 
 struct BlobStore<C> {
@@ -77,7 +77,7 @@ impl<C: ChunkStore> BlobStore<C> {
     fn store(&mut self, mut r: impl Read) -> std::io::Result<String> {
         let mut chunk: Vec<u8> = vec![];
         std::io::copy(&mut r, &mut chunk)?;
-        self.chunk_store.store("foo", chunk)
+        self.chunk_store.store(&Chunk::new(chunk))
     }
 }
 
@@ -158,22 +158,20 @@ mod tests {
     }
 
     impl ChunkStore for ChunkStoreFake {
-        fn store(&mut self, key: &str, content: Vec<u8>) -> std::io::Result<String> {
-            let key = key.to_string();
-            self.chunks.insert(key.clone(), content);
+        fn store(&mut self, chunk: &Chunk) -> std::io::Result<String> {
+            let key = chunk.id();
+            self.chunks.insert(key.clone(), chunk.content.clone());
             Ok(key)
         }
     }
 
     #[test]
-    fn store_blob() {
-        let input = "This is my important payload";
-        let reader = input.as_bytes();
-
+    fn blob_store_calls_chunk_store() {
         let mut store = BlobStore::new(ChunkStoreFake::new());
-        let result = store.store(reader).unwrap();
+        store
+            .store("This is my important payload".as_bytes())
+            .unwrap();
 
-        assert_eq!(result, "foo");
-        assert!(store.chunk_store.chunks.contains_key("foo"));
+        assert!(store.chunk_store.chunks.keys().len() >= 1);
     }
 }
