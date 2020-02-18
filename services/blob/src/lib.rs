@@ -1,4 +1,3 @@
-use bs58;
 use multihash::{encode, Hash, Multihash};
 use std::collections::HashMap;
 use std::io::{Error, Read};
@@ -17,7 +16,7 @@ impl ChunkRef {
     }
 
     fn id(&self) -> String {
-        bs58::encode(self.hash.as_bytes()).into_string()
+        multibase::encode(multibase::Base::Base58btc, self.hash.as_bytes())
     }
 }
 
@@ -149,7 +148,7 @@ mod tests {
     #[test]
     fn chunk_string_id() {
         let cr = ChunkRef::from_bytes("hello world".as_bytes());
-        assert_eq!(cr.id(), "QmaozNR7DZHQK1ZcU9p7QdrshMvXqWK6gpu5rmrkPdT3L4");
+        assert_eq!(cr.id(), "zQmaozNR7DZHQK1ZcU9p7QdrshMvXqWK6gpu5rmrkPdT3L4");
     }
 
     struct ChunkStoreFake {
