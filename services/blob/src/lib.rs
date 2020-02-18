@@ -4,14 +4,14 @@ const HASH_ALGORITHM: multihash::Hash = multihash::Hash::SHA2256;
 const ENCODING: multibase::Base = multibase::Base::Base58btc;
 
 struct Chunk {
+    content: Vec<u8>,
     hash: multihash::Multihash,
 }
 
 impl Chunk {
-    fn from_bytes(content: &[u8]) -> Self {
-        Self {
-            hash: multihash::encode(HASH_ALGORITHM, content).unwrap(),
-        }
+    fn new(content: Vec<u8>) -> Self {
+        let hash = multihash::encode(HASH_ALGORITHM, &content).unwrap();
+        Self { content, hash }
     }
 
     fn id(&self) -> String {
@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn chunk_shows_hash() {
-        let cr = Chunk::from_bytes("hello world".as_bytes());
+        let cr = Chunk::new("hello world".as_bytes().to_vec());
         assert_eq!(
             cr.hash,
             multihash::Multihash::from_bytes(vec![
@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn chunk_string_id() {
-        let cr = Chunk::from_bytes("hello world".as_bytes());
+        let cr = Chunk::new("hello world".as_bytes().to_vec());
         assert_eq!(cr.id(), "zQmaozNR7DZHQK1ZcU9p7QdrshMvXqWK6gpu5rmrkPdT3L4");
     }
 
