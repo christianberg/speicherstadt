@@ -3,11 +3,11 @@ use std::io::Read;
 const HASH_ALGORITHM: multihash::Hash = multihash::Hash::SHA2256;
 const ENCODING: multibase::Base = multibase::Base::Base58btc;
 
-struct ChunkRef {
+struct Chunk {
     hash: multihash::Multihash,
 }
 
-impl ChunkRef {
+impl Chunk {
     fn from_bytes(content: &[u8]) -> Self {
         Self {
             hash: multihash::encode(HASH_ALGORITHM, content).unwrap(),
@@ -127,8 +127,8 @@ mod tests {
     }
 
     #[test]
-    fn chunk_ref_shows_hash() {
-        let cr = ChunkRef::from_bytes("hello world".as_bytes());
+    fn chunk_shows_hash() {
+        let cr = Chunk::from_bytes("hello world".as_bytes());
         assert_eq!(
             cr.hash,
             multihash::Multihash::from_bytes(vec![
@@ -141,7 +141,7 @@ mod tests {
 
     #[test]
     fn chunk_string_id() {
-        let cr = ChunkRef::from_bytes("hello world".as_bytes());
+        let cr = Chunk::from_bytes("hello world".as_bytes());
         assert_eq!(cr.id(), "zQmaozNR7DZHQK1ZcU9p7QdrshMvXqWK6gpu5rmrkPdT3L4");
     }
 
