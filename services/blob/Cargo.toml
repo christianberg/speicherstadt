@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 multihash = "~0.9"
+bs58 = "~0.3"
