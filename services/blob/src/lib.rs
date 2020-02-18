@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::io::{Error, Read};
+use std::io::Read;
 
 const HASH_ALGORITHM: multihash::Hash = multihash::Hash::SHA2256;
 const ENCODING: multibase::Base = multibase::Base::Base58btc;
@@ -87,6 +86,7 @@ impl<C: ChunkStore> BlobStore<C> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashMap;
 
     #[test]
     fn whole_input_fits_in_one_chunk() {
@@ -120,7 +120,7 @@ mod tests {
     #[test]
     fn input_can_be_reassembled_from_chunks() {
         let input = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
-        let mut csc = ConstantSizeChunker::new(input.as_slice(), 3);
+        let csc = ConstantSizeChunker::new(input.as_slice(), 3);
         let mut output = vec![];
         for chunk in csc {
             output.extend(chunk.unwrap());
