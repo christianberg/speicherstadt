@@ -1,22 +1,24 @@
-use multihash::{encode, Hash, Multihash};
 use std::collections::HashMap;
 use std::io::{Error, Read};
 
+const HASH_ALGORITHM: multihash::Hash = multihash::Hash::SHA2256;
+const ENCODING: multibase::Base = multibase::Base::Base58btc;
+
 struct ChunkRef {
     length: usize,
-    hash: Multihash,
+    hash: multihash::Multihash,
 }
 
 impl ChunkRef {
     fn from_bytes(content: &[u8]) -> Self {
         Self {
             length: content.len(),
-            hash: encode(Hash::SHA2256, content).unwrap(),
+            hash: multihash::encode(HASH_ALGORITHM, content).unwrap(),
         }
     }
 
     fn id(&self) -> String {
-        multibase::encode(multibase::Base::Base58btc, self.hash.as_bytes())
+        multibase::encode(ENCODING, self.hash.as_bytes())
     }
 }
 
@@ -137,7 +139,7 @@ mod tests {
         let cr = ChunkRef::from_bytes("hello world".as_bytes());
         assert_eq!(
             cr.hash,
-            Multihash::from_bytes(vec![
+            multihash::Multihash::from_bytes(vec![
                 18, 32, 185, 77, 39, 185, 147, 77, 62, 8, 165, 46, 82, 215, 218, 125, 171, 250,
                 196, 132, 239, 227, 122, 83, 128, 238, 144, 136, 247, 172, 226, 239, 205, 233
             ])
