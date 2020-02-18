@@ -74,10 +74,15 @@ impl<C: ChunkStore> BlobStore<C> {
         Self { chunk_store }
     }
 
-    fn store(&mut self, mut r: impl Read) -> std::io::Result<String> {
-        let mut chunk: Vec<u8> = vec![];
-        std::io::copy(&mut r, &mut chunk)?;
-        self.chunk_store.store(&Chunk::new(chunk))
+    fn store(&mut self, r: impl Read) -> std::io::Result<String> {
+        let chunks = ConstantSizeChunker::new(r, 4);
+        let mut id = "".to_owned();
+        for chunk in chunks {
+            let chunk = chunk?;
+            id.push_str(&chunk.id());
+            self.chunk_store.store(&chunk)?;
+        }
+        Ok(id)
     }
 }
 
