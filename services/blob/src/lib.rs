@@ -31,7 +31,7 @@ impl<R: Read> ConstantSizeChunker<R> {
 }
 
 impl<R: Read> Iterator for ConstantSizeChunker<R> {
-    type Item = std::io::Result<Vec<u8>>;
+    type Item = std::io::Result<Chunk>;
     fn next(&mut self) -> Option<Self::Item> {
         let mut next_chunk = Vec::<u8>::new();
         // An 8kB read buffer is used (same as the default buffer size
@@ -48,7 +48,7 @@ impl<R: Read> Iterator for ConstantSizeChunker<R> {
                     if next_chunk.is_empty() {
                         break None;
                     } else {
-                        break Some(Ok(next_chunk));
+                        break Some(Ok(Chunk::new(next_chunk)));
                     }
                 }
                 Ok(length) => {
@@ -91,7 +91,7 @@ mod tests {
         let input = vec![1, 2, 3];
         let mut csc = ConstantSizeChunker::new(input.as_slice(), 4);
         let chunk = csc.next().unwrap().unwrap();
-        assert_eq!(chunk, input);
+        assert_eq!(chunk.content, input);
         assert!(csc.next().is_none());
     }
 
@@ -100,9 +100,9 @@ mod tests {
         let input = vec![1, 2, 3];
         let mut csc = ConstantSizeChunker::new(input.as_slice(), 2);
         let chunk1 = csc.next().unwrap().unwrap();
-        assert_eq!(chunk1, vec![1, 2]);
+        assert_eq!(chunk1.content, vec![1, 2]);
         let chunk2 = csc.next().unwrap().unwrap();
-        assert_eq!(chunk2, vec![3]);
+        assert_eq!(chunk2.content, vec![3]);
         assert!(csc.next().is_none());
     }
 
@@ -111,7 +111,7 @@ mod tests {
         let input = vec![1, 2, 3];
         let mut csc = ConstantSizeChunker::new(input.as_slice(), 3);
         let chunk = csc.next().unwrap().unwrap();
-        assert_eq!(chunk, input);
+        assert_eq!(chunk.content, input);
         assert!(csc.next().is_none());
     }
 
@@ -121,7 +121,7 @@ mod tests {
         let csc = ConstantSizeChunker::new(input.as_slice(), 3);
         let mut output = vec![];
         for chunk in csc {
-            output.extend(chunk.unwrap());
+            output.extend(chunk.unwrap().content);
         }
         assert_eq!(input, output);
     }
