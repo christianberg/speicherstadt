@@ -4,14 +4,12 @@ const HASH_ALGORITHM: multihash::Hash = multihash::Hash::SHA2256;
 const ENCODING: multibase::Base = multibase::Base::Base58btc;
 
 struct ChunkRef {
-    length: usize,
     hash: multihash::Multihash,
 }
 
 impl ChunkRef {
     fn from_bytes(content: &[u8]) -> Self {
         Self {
-            length: content.len(),
             hash: multihash::encode(HASH_ALGORITHM, content).unwrap(),
         }
     }
@@ -126,12 +124,6 @@ mod tests {
             output.extend(chunk.unwrap());
         }
         assert_eq!(input, output);
-    }
-
-    #[test]
-    fn chunk_ref_shows_length() {
-        let cr = ChunkRef::from_bytes("hello world".as_bytes());
-        assert_eq!(cr.length, 11);
     }
 
     #[test]
