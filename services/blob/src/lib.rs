@@ -3,24 +3,36 @@ use std::io::Read;
 const HASH_ALGORITHM: multihash::Hash = multihash::Hash::SHA2256;
 const ENCODING: multibase::Base = multibase::Base::Base58btc;
 
+struct ChunkHash(multihash::Multihash);
+
+impl ChunkHash {
+    fn new(content: &Vec<u8>) -> Self {
+        Self(multihash::encode(HASH_ALGORITHM, content).unwrap())
+    }
+}
+
+impl std::fmt::Display for ChunkHash {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", multibase::encode(ENCODING, self.0.as_bytes()))
+    }
+}
+
 struct Chunk {
+    hash: ChunkHash,
     content: Vec<u8>,
-    hash: multihash::Multihash,
 }
 
 impl Chunk {
     fn new(content: Vec<u8>) -> Self {
-        let hash = multihash::encode(HASH_ALGORITHM, &content).unwrap();
-        Self { content, hash }
-    }
-
-    fn id(&self) -> String {
-        multibase::encode(ENCODING, self.hash.as_bytes())
+        Self {
+            hash: ChunkHash::new(&content),
+            content,
+        }
     }
 }
 
 struct ChunkRef {
-    hash: multihash::Multihash,
+    hash: ChunkHash,
     length: usize,
 }
 
@@ -30,10 +42,6 @@ impl ChunkRef {
             hash: chunk.hash,
             length: chunk.content.len(),
         }
-    }
-
-    fn id(&self) -> String {
-        multibase::encode(ENCODING, self.hash.as_bytes())
     }
 }
 
@@ -110,7 +118,7 @@ impl<C: ChunkStore> BlobStore<C> {
             let chunk = chunk?;
             self.chunk_store.store(&chunk)?;
             let cr = ChunkRef::from_chunk(chunk);
-            id.push_str(&cr.id());
+            id.push_str(&cr.hash.to_string());
             blob.chunks.push(cr);
         }
         Ok(id)
@@ -166,7 +174,7 @@ mod tests {
     fn chunk_shows_hash() {
         let cr = Chunk::new("hello world".as_bytes().to_vec());
         assert_eq!(
-            cr.hash,
+            cr.hash.0,
             multihash::Multihash::from_bytes(vec![
                 18, 32, 185, 77, 39, 185, 147, 77, 62, 8, 165, 46, 82, 215, 218, 125, 171, 250,
                 196, 132, 239, 227, 122, 83, 128, 238, 144, 136, 247, 172, 226, 239, 205, 233
@@ -176,9 +184,12 @@ mod tests {
     }
 
     #[test]
-    fn chunk_string_id() {
+    fn chunk_string_hash() {
         let cr = Chunk::new("hello world".as_bytes().to_vec());
-        assert_eq!(cr.id(), "zQmaozNR7DZHQK1ZcU9p7QdrshMvXqWK6gpu5rmrkPdT3L4");
+        assert_eq!(
+            cr.hash.to_string(),
+            "zQmaozNR7DZHQK1ZcU9p7QdrshMvXqWK6gpu5rmrkPdT3L4"
+        );
     }
 
     struct ChunkStoreFake {
@@ -195,7 +206,7 @@ mod tests {
 
     impl ChunkStore for ChunkStoreFake {
         fn store(&mut self, chunk: &Chunk) -> std::io::Result<String> {
-            let key = chunk.id();
+            let key = chunk.hash.to_string();
             self.chunks.insert(key.clone(), chunk.content.clone());
             Ok(key)
         }
