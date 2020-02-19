@@ -115,6 +115,8 @@ version = "0.1.0"
 dependencies = [
  "multibase 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "multihash 0.9.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.44 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

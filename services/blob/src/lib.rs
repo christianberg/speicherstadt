@@ -1,3 +1,4 @@
+use serde::{Serialize, Serializer};
 use std::io::Read;
 
 const HASH_ALGORITHM: multihash::Hash = multihash::Hash::SHA2256;
@@ -17,6 +18,15 @@ impl std::fmt::Display for ChunkHash {
     }
 }
 
+impl Serialize for ChunkHash {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
 struct Chunk {
     hash: ChunkHash,
     content: Vec<u8>,
@@ -31,6 +41,7 @@ impl Chunk {
     }
 }
 
+#[derive(Serialize)]
 struct ChunkRef {
     hash: ChunkHash,
     length: usize,
@@ -45,6 +56,7 @@ impl ChunkRef {
     }
 }
 
+#[derive(Serialize)]
 struct Blob {
     chunks: Vec<ChunkRef>,
 }
@@ -113,15 +125,15 @@ impl<C: ChunkStore> BlobStore<C> {
     fn store(&mut self, r: impl Read) -> std::io::Result<String> {
         let mut blob = Blob::new();
         let chunks = ConstantSizeChunker::new(r, 4);
-        let mut id = "".to_owned();
         for chunk in chunks {
             let chunk = chunk?;
             self.chunk_store.store(&chunk)?;
             let cr = ChunkRef::from_chunk(chunk);
-            id.push_str(&cr.hash.to_string());
             blob.chunks.push(cr);
         }
-        Ok(id)
+        let meta_chunk = Chunk::new(serde_json::to_vec(&blob)?);
+        self.chunk_store.store(&meta_chunk)?;
+        Ok(meta_chunk.hash.to_string())
     }
 }
 
@@ -219,6 +231,16 @@ mod tests {
             .store("This is my important payload".as_bytes())
             .unwrap();
 
-        assert!(store.chunk_store.chunks.keys().len() >= 1);
+        assert!(store.chunk_store.chunks.keys().len() > 1);
+    }
+
+    #[test]
+    fn blob_store_returns_blob_id() {
+        let mut store = BlobStore::new(ChunkStoreFake::new());
+        let result = store
+            .store("This is my important payload".as_bytes())
+            .unwrap();
+
+        assert_eq!(result, "zQmbMf6UzYixw32VSmPi2WDNFFizmVAaANqHAQoXuZMWAjc");
     }
 }
