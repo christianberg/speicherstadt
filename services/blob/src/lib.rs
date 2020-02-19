@@ -19,6 +19,34 @@ impl Chunk {
     }
 }
 
+struct ChunkRef {
+    hash: multihash::Multihash,
+    length: usize,
+}
+
+impl ChunkRef {
+    fn from_chunk(chunk: Chunk) -> Self {
+        Self {
+            hash: chunk.hash,
+            length: chunk.content.len(),
+        }
+    }
+
+    fn id(&self) -> String {
+        multibase::encode(ENCODING, self.hash.as_bytes())
+    }
+}
+
+struct Blob {
+    chunks: Vec<ChunkRef>,
+}
+
+impl Blob {
+    fn new() -> Self {
+        Self { chunks: vec![] }
+    }
+}
+
 struct ConstantSizeChunker<R> {
     inner: R,
     chunk_size: usize,
@@ -75,12 +103,15 @@ impl<C: ChunkStore> BlobStore<C> {
     }
 
     fn store(&mut self, r: impl Read) -> std::io::Result<String> {
+        let mut blob = Blob::new();
         let chunks = ConstantSizeChunker::new(r, 4);
         let mut id = "".to_owned();
         for chunk in chunks {
             let chunk = chunk?;
-            id.push_str(&chunk.id());
             self.chunk_store.store(&chunk)?;
+            let cr = ChunkRef::from_chunk(chunk);
+            id.push_str(&cr.id());
+            blob.chunks.push(cr);
         }
         Ok(id)
     }
