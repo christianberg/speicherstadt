@@ -113,10 +113,14 @@ dependencies = [
 name = "blob"
 version = "0.1.0"
 dependencies = [
+ "iron 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "multibase 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "multihash 0.9.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reqwest 0.9.24 (registry+https://github.com/rust-lang/crates.io-index)",
+ "router 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.104 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_json 1.0.44 (registry+https://github.com/rust-lang/crates.io-index)",
+ "structopt 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]

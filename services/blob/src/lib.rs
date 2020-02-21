@@ -1,3 +1,6 @@
+use iron::prelude::*;
+use iron::status;
+use router::Router;
 use serde::{Serialize, Serializer};
 use std::io::Read;
 
@@ -110,7 +113,7 @@ impl<R: Read> Iterator for ConstantSizeChunker<R> {
 }
 
 trait ChunkStore {
-    fn store(&mut self, chunk: &Chunk) -> std::io::Result<String>;
+    fn store(&mut self, chunk: &Chunk) -> std::io::Result<()>;
 }
 
 struct BlobStore<C> {
@@ -135,6 +138,35 @@ impl<C: ChunkStore> BlobStore<C> {
         self.chunk_store.store(&meta_chunk)?;
         Ok(meta_chunk.hash.to_string())
     }
+}
+
+struct HttpChunkStore {
+    base_url: reqwest::Url,
+    client: reqwest::Client,
+}
+
+impl ChunkStore for HttpChunkStore {
+    fn store(&mut self, chunk: &Chunk) -> std::io::Result<()> {
+        let url = format!("{}/{}", self.base_url, chunk.hash);
+        // TODO can we do without clone() here?
+        // TODO error handling
+        self.client.post(&url).body(chunk.content.clone()).send();
+        Ok(())
+    }
+}
+
+fn handle_post(_req: &mut Request) -> IronResult<Response> {
+    Ok(Response::with(status::Created))
+}
+
+pub fn start_server(port: u16) -> std::io::Result<()> {
+    let mut router = Router::new();
+    router.post("/blobs", handle_post, "blobs_post");
+    let chain = Chain::new(router);
+    Iron::new(chain)
+        .http(("localhost", port))
+        .expect("Unable to start server");
+    Ok(())
 }
 
 #[cfg(test)]
@@ -217,10 +249,10 @@ mod tests {
     }
 
     impl ChunkStore for ChunkStoreFake {
-        fn store(&mut self, chunk: &Chunk) -> std::io::Result<String> {
+        fn store(&mut self, chunk: &Chunk) -> std::io::Result<()> {
             let key = chunk.hash.to_string();
             self.chunks.insert(key.clone(), chunk.content.clone());
-            Ok(key)
+            Ok(())
         }
     }
 
