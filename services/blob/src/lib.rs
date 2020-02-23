@@ -127,7 +127,7 @@ impl<C: ChunkStore> BlobStore<C> {
 
     fn store(&mut self, r: impl Read) -> std::io::Result<String> {
         let mut blob = Blob::new();
-        let chunks = ConstantSizeChunker::new(r, 4);
+        let chunks = ConstantSizeChunker::new(r, 512 * 1024);
         for chunk in chunks {
             let chunk = chunk?;
             self.chunk_store.store(&chunk)?;
@@ -273,6 +273,6 @@ mod tests {
             .store("This is my important payload".as_bytes())
             .unwrap();
 
-        assert_eq!(result, "zQmbMf6UzYixw32VSmPi2WDNFFizmVAaANqHAQoXuZMWAjc");
+        assert_eq!(result, "zQmeDtYtDewSLdEU8Z5jfBknQQn6BJnZ6asWQ7PqozUKG7r");
     }
 }
