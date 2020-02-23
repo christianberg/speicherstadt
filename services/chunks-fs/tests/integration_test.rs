@@ -55,7 +55,7 @@ impl Drop for TestServer {
 fn upload_chunk() {
     let _server = TestServer::new(3002);
     let input: Vec<u8> = "hello world".as_bytes().to_vec();
-    let url = "http://localhost:3002/chunks/sha256/b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9";
+    let url = "http://localhost:3002/chunks/foobar";
     let client = reqwest::Client::new();
     let put_result = client.put(url).body(input.clone()).send().unwrap();
     assert!(put_result.status().is_success());

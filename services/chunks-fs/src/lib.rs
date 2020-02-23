@@ -67,11 +67,6 @@ impl Storage {
             info!(logger, "Creating directory {:?}", data_dir);
             std::fs::create_dir(&data_dir)?;
         }
-        data_dir.push("sha256");
-        if !data_dir.exists() {
-            info!(logger, "Creating directory {:?}", data_dir);
-            std::fs::create_dir(&data_dir)?;
-        }
         let mut partial_dir = base_dir.clone();
         partial_dir.push("partial");
         if !partial_dir.exists() {
@@ -102,15 +97,14 @@ struct ChunkStorer {
 
 impl ChunkStorer {
     fn path_for_hash(&self, hash: &str) -> std::io::Result<PathBuf> {
-        assert_eq!(hash.len(), 64);
-        let shard = hash.get(0..2).unwrap();
+        let shard = hash.get(0..4).unwrap();
         let mut path = self.data_dir.clone();
         path.push(shard);
         if !path.exists() {
             info!(self.logger, "Creating directory {:?}", path);
             std::fs::create_dir(&path)?;
         }
-        path.push(format!("sha256-{}", hash));
+        path.push(hash);
         Ok(path)
     }
 
@@ -135,8 +129,8 @@ impl ChunkStorer {
 pub fn start_server(port: u16, base_dir: PathBuf, logger: &Logger) -> Result<(), std::io::Error> {
     let mut router = Router::new();
     let storage = Storage::new(base_dir, logger)?;
-    router.get("/chunks/sha256/:hash", handle_get, "chunks_get");
-    router.put("/chunks/sha256/:hash", handle_put, "chunks_put");
+    router.get("/chunks/:hash", handle_get, "chunks_get");
+    router.put("/chunks/:hash", handle_put, "chunks_put");
     let mut chain = Chain::new(router);
     chain.link_before(storage);
     Iron::new(chain)
