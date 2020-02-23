@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+
 use iron::prelude::*;
 use iron::status;
 use router::Router;
@@ -147,16 +150,25 @@ struct HttpChunkStore {
 
 impl ChunkStore for HttpChunkStore {
     fn store(&mut self, chunk: &Chunk) -> std::io::Result<()> {
-        let url = format!("{}/{}", self.base_url, chunk.hash);
+        let url = self.base_url.join(&chunk.hash.to_string()).unwrap();
         // TODO can we do without clone() here?
         // TODO error handling
-        self.client.post(&url).body(chunk.content.clone()).send();
+        trace!("Storing chunk {}", url);
+        let result = self.client.put(url).body(chunk.content.clone()).send();
+        trace!("{:?}", result);
         Ok(())
     }
 }
 
-fn handle_post(_req: &mut Request) -> IronResult<Response> {
-    Ok(Response::with(status::Created))
+fn handle_post(req: &mut Request) -> IronResult<Response> {
+    let mut store = BlobStore::new(HttpChunkStore {
+        base_url: reqwest::Url::parse("http://localhost:3000/chunks/").unwrap(),
+        client: reqwest::Client::new(),
+    });
+    match store.store(&mut req.body) {
+        Ok(_) => Ok(Response::with(status::Created)),
+        Err(e) => Err(IronError::new(e, status::InternalServerError)),
+    }
 }
 
 pub fn start_server(port: u16) -> std::io::Result<()> {
