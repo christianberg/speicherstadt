@@ -3,6 +3,8 @@ extern crate log;
 
 use iron::prelude::*;
 use iron::status;
+use opentelemetry::api::{Key, Provider, Span, TracerGenerics};
+use opentelemetry::{global, sdk};
 use router::Router;
 use serde::{Serialize, Serializer};
 use std::io::Read;
@@ -40,10 +42,12 @@ struct Chunk {
 
 impl Chunk {
     fn new(content: Vec<u8>) -> Self {
-        Self {
-            hash: ChunkHash::new(&content),
-            content,
-        }
+        global::trace_provider()
+            .get_tracer("Chunk")
+            .with_span("new_chunk", move |_span| Self {
+                hash: ChunkHash::new(&content),
+                content,
+            })
     }
 }
 
@@ -87,31 +91,36 @@ impl<R: Read> ConstantSizeChunker<R> {
 impl<R: Read> Iterator for ConstantSizeChunker<R> {
     type Item = std::io::Result<Chunk>;
     fn next(&mut self) -> Option<Self::Item> {
-        let mut next_chunk = Vec::<u8>::new();
-        // An 8kB read buffer is used (same as the default buffer size
-        // of BufReader), unless the chunk size is smaller
-        let mut buffer = vec![0u8; std::cmp::min(self.chunk_size, 8192)];
-        let mut bytes_remaining = self.chunk_size;
-        let mut slice = buffer.as_mut_slice();
-        loop {
-            if bytes_remaining < slice.len() {
-                slice = &mut slice[..bytes_remaining];
-            }
-            match self.inner.read(slice) {
-                Ok(0) => {
-                    if next_chunk.is_empty() {
-                        break None;
-                    } else {
-                        break Some(Ok(Chunk::new(next_chunk)));
+        global::trace_provider()
+            .get_tracer("ConstantSizeChunker")
+            .with_span("next", move |span| {
+                let mut next_chunk = Vec::<u8>::new();
+                let mut buffer = vec![0u8; std::cmp::min(self.chunk_size, 64 * 1024)];
+                let mut bytes_remaining = self.chunk_size;
+                let mut slice = buffer.as_mut_slice();
+                loop {
+                    if bytes_remaining < slice.len() {
+                        slice = &mut slice[..bytes_remaining];
+                    }
+                    match self.inner.read(slice) {
+                        Ok(0) => {
+                            if next_chunk.is_empty() {
+                                break None;
+                            } else {
+                                span.add_event(format!("Returning new chunk"));
+                                break Some(Ok(Chunk::new(next_chunk)));
+                            }
+                        }
+                        Ok(length) => {
+                            span.add_event(format!("Bytes read: {}", length));
+                            next_chunk.extend_from_slice(&slice[..length]);
+                            bytes_remaining -= length;
+                            span.add_event(format!("Bytes remaining: {}", bytes_remaining));
+                        }
+                        Err(e) => break Some(std::io::Result::Err(e)),
                     }
                 }
-                Ok(length) => {
-                    next_chunk.extend_from_slice(&slice[..length]);
-                    bytes_remaining -= length;
-                }
-                Err(e) => break Some(std::io::Result::Err(e)),
-            }
-        }
+            })
     }
 }
 
@@ -129,17 +138,21 @@ impl<C: ChunkStore> BlobStore<C> {
     }
 
     fn store(&mut self, r: impl Read) -> std::io::Result<String> {
-        let mut blob = Blob::new();
-        let chunks = ConstantSizeChunker::new(r, 512 * 1024);
-        for chunk in chunks {
-            let chunk = chunk?;
-            self.chunk_store.store(&chunk)?;
-            let cr = ChunkRef::from_chunk(chunk);
-            blob.chunks.push(cr);
-        }
-        let meta_chunk = Chunk::new(serde_json::to_vec(&blob)?);
-        self.chunk_store.store(&meta_chunk)?;
-        Ok(meta_chunk.hash.to_string())
+        global::trace_provider()
+            .get_tracer("BlobStore")
+            .with_span("store", move |_span| {
+                let mut blob = Blob::new();
+                let chunks = ConstantSizeChunker::new(r, 512 * 1024);
+                for chunk in chunks {
+                    let chunk = chunk?;
+                    self.chunk_store.store(&chunk)?;
+                    let cr = ChunkRef::from_chunk(chunk);
+                    blob.chunks.push(cr);
+                }
+                let meta_chunk = Chunk::new(serde_json::to_vec(&blob)?);
+                self.chunk_store.store(&meta_chunk)?;
+                Ok(meta_chunk.hash.to_string())
+            })
     }
 }
 
@@ -150,28 +163,60 @@ struct HttpChunkStore {
 
 impl ChunkStore for HttpChunkStore {
     fn store(&mut self, chunk: &Chunk) -> std::io::Result<()> {
-        let url = self.base_url.join(&chunk.hash.to_string()).unwrap();
-        // TODO can we do without clone() here?
-        // TODO error handling
-        trace!("Storing chunk {}", url);
-        let result = self.client.put(url).body(chunk.content.clone()).send();
-        trace!("{:?}", result);
-        Ok(())
+        global::trace_provider()
+            .get_tracer("ChunkStore")
+            .with_span("store_chunk", move |_span| {
+                let url = self.base_url.join(&chunk.hash.to_string()).unwrap();
+                // TODO can we do without clone() here?
+                // TODO error handling
+                trace!("Storing chunk {}", url);
+                let result = self.client.put(url).body(chunk.content.clone()).send();
+                trace!("{:?}", result);
+                Ok(())
+            })
     }
 }
 
 fn handle_post(req: &mut Request) -> IronResult<Response> {
-    let mut store = BlobStore::new(HttpChunkStore {
-        base_url: reqwest::Url::parse("http://localhost:3000/chunks/").unwrap(),
-        client: reqwest::Client::new(),
-    });
-    match store.store(&mut req.body) {
-        Ok(_) => Ok(Response::with(status::Created)),
-        Err(e) => Err(IronError::new(e, status::InternalServerError)),
-    }
+    global::trace_provider()
+        .get_tracer("blob")
+        .with_span("post", move |_span| {
+            let mut store = BlobStore::new(HttpChunkStore {
+                base_url: reqwest::Url::parse("http://localhost:3000/chunks/").unwrap(),
+                client: reqwest::Client::new(),
+            });
+            match store.store(&mut req.body) {
+                Ok(_) => Ok(Response::with(status::Created)),
+                Err(e) => Err(IronError::new(e, status::InternalServerError)),
+            }
+        })
+}
+
+fn init_tracer() -> thrift::Result<()> {
+    let exporter = opentelemetry_jaeger::Exporter::builder()
+        .with_agent_endpoint("127.0.0.1:6831".parse().unwrap())
+        .with_process(opentelemetry_jaeger::Process {
+            service_name: "trace-demo".to_string(),
+            tags: vec![
+                Key::new("exporter").string("jaeger"),
+                Key::new("float").f64(312.23),
+            ],
+        })
+        .init()?;
+    let provider = sdk::Provider::builder()
+        .with_simple_exporter(exporter)
+        .with_config(sdk::Config {
+            default_sampler: Box::new(sdk::Sampler::Always),
+            ..Default::default()
+        })
+        .build();
+    global::set_provider(provider);
+
+    Ok(())
 }
 
 pub fn start_server(port: u16) -> std::io::Result<()> {
+    init_tracer().unwrap();
     let mut router = Router::new();
     router.post("/blobs", handle_post, "blobs_post");
     let chain = Chain::new(router);
