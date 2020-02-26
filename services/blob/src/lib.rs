@@ -44,9 +44,10 @@ impl Chunk {
     fn new(content: Vec<u8>) -> Self {
         global::trace_provider()
             .get_tracer("Chunk")
-            .with_span("new_chunk", move |_span| Self {
-                hash: ChunkHash::new(&content),
-                content,
+            .with_span("Chunk::new", move |span| {
+                let hash = ChunkHash::new(&content);
+                span.set_attribute(Key::new("hash").string(hash.to_string()));
+                Self { hash, content }
             })
     }
 }
@@ -93,11 +94,12 @@ impl<R: Read> Iterator for ConstantSizeChunker<R> {
     fn next(&mut self) -> Option<Self::Item> {
         global::trace_provider()
             .get_tracer("ConstantSizeChunker")
-            .with_span("next", move |span| {
+            .with_span("ConstantSizeChunker::next", move |span| {
                 let mut next_chunk = Vec::<u8>::new();
                 let mut buffer = vec![0u8; std::cmp::min(self.chunk_size, 64 * 1024)];
                 let mut bytes_remaining = self.chunk_size;
                 let mut slice = buffer.as_mut_slice();
+                let mut size = 0usize;
                 loop {
                     if bytes_remaining < slice.len() {
                         slice = &mut slice[..bytes_remaining];
@@ -105,17 +107,17 @@ impl<R: Read> Iterator for ConstantSizeChunker<R> {
                     match self.inner.read(slice) {
                         Ok(0) => {
                             if next_chunk.is_empty() {
+                                span.set_attribute(Key::new("chunk_size").u64(0));
                                 break None;
                             } else {
-                                span.add_event(format!("Returning new chunk"));
+                                span.set_attribute(Key::new("chunk_size").u64(size as u64));
                                 break Some(Ok(Chunk::new(next_chunk)));
                             }
                         }
                         Ok(length) => {
-                            span.add_event(format!("Bytes read: {}", length));
                             next_chunk.extend_from_slice(&slice[..length]);
                             bytes_remaining -= length;
-                            span.add_event(format!("Bytes remaining: {}", bytes_remaining));
+                            size += length;
                         }
                         Err(e) => break Some(std::io::Result::Err(e)),
                     }
@@ -138,9 +140,9 @@ impl<C: ChunkStore> BlobStore<C> {
     }
 
     fn store(&mut self, r: impl Read) -> std::io::Result<String> {
-        global::trace_provider()
-            .get_tracer("BlobStore")
-            .with_span("store", move |_span| {
+        global::trace_provider().get_tracer("BlobStore").with_span(
+            "BlobStore::store",
+            move |span| {
                 let mut blob = Blob::new();
                 let chunks = ConstantSizeChunker::new(r, 512 * 1024);
                 for chunk in chunks {
@@ -151,8 +153,12 @@ impl<C: ChunkStore> BlobStore<C> {
                 }
                 let meta_chunk = Chunk::new(serde_json::to_vec(&blob)?);
                 self.chunk_store.store(&meta_chunk)?;
-                Ok(meta_chunk.hash.to_string())
-            })
+                let hash = meta_chunk.hash.to_string();
+                span.set_attribute(Key::new("hash").string(&hash));
+                span.set_attribute(Key::new("chunk_count").u64(blob.chunks.len() as u64));
+                Ok(hash)
+            },
+        )
     }
 }
 
@@ -163,17 +169,20 @@ struct HttpChunkStore {
 
 impl ChunkStore for HttpChunkStore {
     fn store(&mut self, chunk: &Chunk) -> std::io::Result<()> {
-        global::trace_provider()
-            .get_tracer("ChunkStore")
-            .with_span("store_chunk", move |_span| {
+        global::trace_provider().get_tracer("ChunkStore").with_span(
+            "ChunkStore::store",
+            move |span| {
                 let url = self.base_url.join(&chunk.hash.to_string()).unwrap();
+                span.set_attribute(Key::new("url").string(url.to_string()));
                 // TODO can we do without clone() here?
                 // TODO error handling
-                trace!("Storing chunk {}", url);
                 let result = self.client.put(url).body(chunk.content.clone()).send();
-                trace!("{:?}", result);
+                span.set_attribute(
+                    Key::new("response_code").string(result.unwrap().status().to_string()),
+                );
                 Ok(())
-            })
+            },
+        )
     }
 }
 
@@ -196,11 +205,8 @@ fn init_tracer() -> thrift::Result<()> {
     let exporter = opentelemetry_jaeger::Exporter::builder()
         .with_agent_endpoint("127.0.0.1:6831".parse().unwrap())
         .with_process(opentelemetry_jaeger::Process {
-            service_name: "trace-demo".to_string(),
-            tags: vec![
-                Key::new("exporter").string("jaeger"),
-                Key::new("float").f64(312.23),
-            ],
+            service_name: "Blob Service".to_string(),
+            tags: vec![],
         })
         .init()?;
     let provider = sdk::Provider::builder()
