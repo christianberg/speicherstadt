@@ -3,7 +3,7 @@ extern crate log;
 
 use iron::prelude::*;
 use iron::status;
-use opentelemetry::api::{Key, Provider, Span, TracerGenerics};
+use opentelemetry::api::{Key, Provider, Span, SpanStatus, TracerGenerics};
 use opentelemetry::{global, sdk};
 use router::Router;
 use serde::{Serialize, Serializer};
@@ -11,6 +11,15 @@ use std::io::Read;
 
 const HASH_ALGORITHM: multihash::Hash = multihash::Hash::SHA2256;
 const ENCODING: multibase::Base = multibase::Base::Base58btc;
+
+fn with_span<T, F>(name: &'static str, f: F) -> T
+where
+    F: FnOnce(&mut opentelemetry::global::BoxedSpan) -> T,
+{
+    global::trace_provider()
+        .get_tracer("Blob Service")
+        .with_span(name, f)
+}
 
 struct ChunkHash(multihash::Multihash);
 
@@ -42,13 +51,11 @@ struct Chunk {
 
 impl Chunk {
     fn new(content: Vec<u8>) -> Self {
-        global::trace_provider()
-            .get_tracer("Chunk")
-            .with_span("Chunk::new", move |span| {
-                let hash = ChunkHash::new(&content);
-                span.set_attribute(Key::new("hash").string(hash.to_string()));
-                Self { hash, content }
-            })
+        with_span("Chunk::new", move |span| {
+            let hash = ChunkHash::new(&content);
+            span.set_attribute(Key::new("hash").string(hash.to_string()));
+            Self { hash, content }
+        })
     }
 }
 
@@ -92,37 +99,35 @@ impl<R: Read> ConstantSizeChunker<R> {
 impl<R: Read> Iterator for ConstantSizeChunker<R> {
     type Item = std::io::Result<Chunk>;
     fn next(&mut self) -> Option<Self::Item> {
-        global::trace_provider()
-            .get_tracer("ConstantSizeChunker")
-            .with_span("ConstantSizeChunker::next", move |span| {
-                let mut next_chunk = Vec::<u8>::new();
-                let mut buffer = vec![0u8; std::cmp::min(self.chunk_size, 64 * 1024)];
-                let mut bytes_remaining = self.chunk_size;
-                let mut slice = buffer.as_mut_slice();
-                let mut size = 0usize;
-                loop {
-                    if bytes_remaining < slice.len() {
-                        slice = &mut slice[..bytes_remaining];
-                    }
-                    match self.inner.read(slice) {
-                        Ok(0) => {
-                            if next_chunk.is_empty() {
-                                span.set_attribute(Key::new("chunk_size").u64(0));
-                                break None;
-                            } else {
-                                span.set_attribute(Key::new("chunk_size").u64(size as u64));
-                                break Some(Ok(Chunk::new(next_chunk)));
-                            }
-                        }
-                        Ok(length) => {
-                            next_chunk.extend_from_slice(&slice[..length]);
-                            bytes_remaining -= length;
-                            size += length;
-                        }
-                        Err(e) => break Some(std::io::Result::Err(e)),
-                    }
+        with_span("ConstantSizeChunker::next", move |span| {
+            let mut next_chunk = Vec::<u8>::new();
+            let mut buffer = vec![0u8; std::cmp::min(self.chunk_size, 64 * 1024)];
+            let mut bytes_remaining = self.chunk_size;
+            let mut slice = buffer.as_mut_slice();
+            let mut size = 0usize;
+            loop {
+                if bytes_remaining < slice.len() {
+                    slice = &mut slice[..bytes_remaining];
                 }
-            })
+                match self.inner.read(slice) {
+                    Ok(0) => {
+                        if next_chunk.is_empty() {
+                            span.set_attribute(Key::new("chunk_size").u64(0));
+                            break None;
+                        } else {
+                            span.set_attribute(Key::new("chunk_size").u64(size as u64));
+                            break Some(Ok(Chunk::new(next_chunk)));
+                        }
+                    }
+                    Ok(length) => {
+                        next_chunk.extend_from_slice(&slice[..length]);
+                        bytes_remaining -= length;
+                        size += length;
+                    }
+                    Err(e) => break Some(std::io::Result::Err(e)),
+                }
+            }
+        })
     }
 }
 
@@ -140,25 +145,22 @@ impl<C: ChunkStore> BlobStore<C> {
     }
 
     fn store(&mut self, r: impl Read) -> std::io::Result<String> {
-        global::trace_provider().get_tracer("BlobStore").with_span(
-            "BlobStore::store",
-            move |span| {
-                let mut blob = Blob::new();
-                let chunks = ConstantSizeChunker::new(r, 512 * 1024);
-                for chunk in chunks {
-                    let chunk = chunk?;
-                    self.chunk_store.store(&chunk)?;
-                    let cr = ChunkRef::from_chunk(chunk);
-                    blob.chunks.push(cr);
-                }
-                let meta_chunk = Chunk::new(serde_json::to_vec(&blob)?);
-                self.chunk_store.store(&meta_chunk)?;
-                let hash = meta_chunk.hash.to_string();
-                span.set_attribute(Key::new("hash").string(&hash));
-                span.set_attribute(Key::new("chunk_count").u64(blob.chunks.len() as u64));
-                Ok(hash)
-            },
-        )
+        with_span("BlobStore::store", move |span| {
+            let mut blob = Blob::new();
+            let chunks = ConstantSizeChunker::new(r, 512 * 1024);
+            for chunk in chunks {
+                let chunk = chunk?;
+                self.chunk_store.store(&chunk)?;
+                let cr = ChunkRef::from_chunk(chunk);
+                blob.chunks.push(cr);
+            }
+            let meta_chunk = Chunk::new(serde_json::to_vec(&blob)?);
+            self.chunk_store.store(&meta_chunk)?;
+            let hash = meta_chunk.hash.to_string();
+            span.set_attribute(Key::new("hash").string(&hash));
+            span.set_attribute(Key::new("chunk_count").u64(blob.chunks.len() as u64));
+            Ok(hash)
+        })
     }
 }
 
@@ -169,36 +171,37 @@ struct HttpChunkStore {
 
 impl ChunkStore for HttpChunkStore {
     fn store(&mut self, chunk: &Chunk) -> std::io::Result<()> {
-        global::trace_provider().get_tracer("ChunkStore").with_span(
-            "ChunkStore::store",
-            move |span| {
-                let url = self.base_url.join(&chunk.hash.to_string()).unwrap();
-                span.set_attribute(Key::new("url").string(url.to_string()));
-                // TODO can we do without clone() here?
-                // TODO error handling
-                let result = self.client.put(url).body(chunk.content.clone()).send();
-                span.set_attribute(
-                    Key::new("response_code").string(result.unwrap().status().to_string()),
-                );
-                Ok(())
-            },
-        )
+        with_span("ChunkStore::store", move |span| {
+            let url = self.base_url.join(&chunk.hash.to_string()).unwrap();
+            span.set_attribute(Key::new("url").string(url.to_string()));
+            // TODO can we do without clone() here?
+            // TODO error handling
+            let result = self.client.put(url).body(chunk.content.clone()).send();
+            match result {
+                Ok(res) => {
+                    span.set_attribute(Key::new("response_code").string(res.status().to_string()));
+                    Ok(())
+                }
+                Err(e) => {
+                    span.set_status(SpanStatus::Unavailable);
+                    Err(std::io::Error::new(std::io::ErrorKind::Other, e))
+                }
+            }
+        })
     }
 }
 
 fn handle_post(req: &mut Request) -> IronResult<Response> {
-    global::trace_provider()
-        .get_tracer("blob")
-        .with_span("post", move |_span| {
-            let mut store = BlobStore::new(HttpChunkStore {
-                base_url: reqwest::Url::parse("http://localhost:3000/chunks/").unwrap(),
-                client: reqwest::Client::new(),
-            });
-            match store.store(&mut req.body) {
-                Ok(_) => Ok(Response::with(status::Created)),
-                Err(e) => Err(IronError::new(e, status::InternalServerError)),
-            }
-        })
+    with_span("post", move |_span| {
+        let mut store = BlobStore::new(HttpChunkStore {
+            base_url: reqwest::Url::parse("http://localhost:3000/chunks/").unwrap(),
+            client: reqwest::Client::new(),
+        });
+        match store.store(&mut req.body) {
+            Ok(_) => Ok(Response::with(status::Created)),
+            Err(e) => Err(IronError::new(e, status::InternalServerError)),
+        }
+    })
 }
 
 fn init_tracer() -> thrift::Result<()> {
