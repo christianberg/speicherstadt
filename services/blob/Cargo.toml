@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 iron = "~0.6"
 log = "~0.4"
-multibase = "~0.7"
+multibase = "~0.8"
 multihash = "~0.9"
 opentelemetry = "~0.2"
 opentelemetry-jaeger = "~0.1"
