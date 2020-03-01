@@ -10,7 +10,7 @@ use serde::{Serialize, Serializer};
 use std::io::Read;
 
 const HASH_ALGORITHM: multihash::Hash = multihash::Hash::SHA2256;
-const ENCODING: multibase::Base = multibase::Base::Base58btc;
+const ENCODING: multibase::Base = multibase::Base::Base58Btc;
 
 fn with_span<T, F>(name: &'static str, f: F) -> T
 where
