@@ -3,13 +3,13 @@ extern crate log;
 
 use iron::prelude::*;
 use iron::status;
+use multihash::{Multihash, Sha2_256 as hash_algorithm};
 use opentelemetry::api::{Key, Provider, Span, SpanStatus, TracerGenerics};
 use opentelemetry::{global, sdk};
 use router::Router;
 use serde::{Serialize, Serializer};
 use std::io::Read;
 
-const HASH_ALGORITHM: multihash::Hash = multihash::Hash::SHA2256;
 const ENCODING: multibase::Base = multibase::Base::Base58Btc;
 
 fn with_span<T, F>(name: &'static str, f: F) -> T
@@ -21,11 +21,11 @@ where
         .with_span(name, f)
 }
 
-struct ChunkHash(multihash::Multihash);
+struct ChunkHash(Multihash);
 
 impl ChunkHash {
     fn new(content: &Vec<u8>) -> Self {
-        Self(multihash::encode(HASH_ALGORITHM, content).unwrap())
+        Self(hash_algorithm::digest(content))
     }
 }
 
@@ -285,7 +285,7 @@ mod tests {
         let cr = Chunk::new("hello world".as_bytes().to_vec());
         assert_eq!(
             cr.hash.0,
-            multihash::Multihash::from_bytes(vec![
+            Multihash::from_bytes(vec![
                 18, 32, 185, 77, 39, 185, 147, 77, 62, 8, 165, 46, 82, 215, 218, 125, 171, 250,
                 196, 132, 239, 227, 122, 83, 128, 238, 144, 136, 247, 172, 226, 239, 205, 233
             ])
