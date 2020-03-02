@@ -17,4 +17,4 @@ tempfile = "~3"
 
 [dev-dependencies]
 duct = "~0.13"
-reqwest = "~0.10"
+reqwest = { version = "~0.10", features = ["blocking"] }
