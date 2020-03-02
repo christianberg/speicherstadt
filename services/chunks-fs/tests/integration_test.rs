@@ -56,7 +56,7 @@ fn upload_chunk() {
     let _server = TestServer::new(3002);
     let input: Vec<u8> = "hello world".as_bytes().to_vec();
     let url = "http://localhost:3002/chunks/foobar";
-    let client = reqwest::Client::new();
+    let client = reqwest::blocking::Client::new();
     let put_result = client.put(url).body(input.clone()).send().unwrap();
     assert!(put_result.status().is_success());
     let mut get_result = client.get(url).send().unwrap();

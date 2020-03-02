@@ -166,7 +166,7 @@ impl<C: ChunkStore> BlobStore<C> {
 
 struct HttpChunkStore {
     base_url: reqwest::Url,
-    client: reqwest::Client,
+    client: reqwest::blocking::Client,
 }
 
 impl ChunkStore for HttpChunkStore {
@@ -195,7 +195,7 @@ fn handle_post(req: &mut Request) -> IronResult<Response> {
     with_span("post", move |_span| {
         let mut store = BlobStore::new(HttpChunkStore {
             base_url: reqwest::Url::parse("http://localhost:3000/chunks/").unwrap(),
-            client: reqwest::Client::new(),
+            client: reqwest::blocking::Client::new(),
         });
         match store.store(&mut req.body) {
             Ok(_) => Ok(Response::with(status::Created)),
