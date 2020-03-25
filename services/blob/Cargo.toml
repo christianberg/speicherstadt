@@ -12,7 +12,7 @@ log = "~0.4"
 multibase = "~0.8"
 multihash = "~0.10"
 opentelemetry = "~0.2"
-opentelemetry-jaeger = "~0.1"
+opentelemetry-jaeger = "~0.2"
 pretty_env_logger = "~0.4"
 reqwest = { version = "~0.10", features = ["blocking"] }
 router = "~0.6"
