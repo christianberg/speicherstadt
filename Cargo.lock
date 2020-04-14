@@ -195,7 +195,7 @@ dependencies = [
 name = "chunks-fs"
 version = "0.1.0"
 dependencies = [
- "duct 0.13.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "duct 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "iron 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.10.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "router 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -334,7 +334,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "duct"
-version = "0.13.3"
+version = "0.13.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "libc 0.2.67 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2041,7 +2041,7 @@ dependencies = [
 "checksum dirs 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "13aea89a5c93364a98e9b37b2fa237effbb694d5cfe01c5b70941f7eb087d5e3"
 "checksum dirs-sys 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "afa0b23de8fd801745c471deffa6e12d248f962c9fd4b4c33787b055599bde7b"
 "checksum dtoa 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)" = "4358a9e11b9a09cf52383b451b49a169e8d797b68aa02301ff586d70d9661ea3"
-"checksum duct 0.13.3 (registry+https://github.com/rust-lang/crates.io-index)" = "1607fa68d55be208e83bcfbcfffbc1ec65c9fbcf9eb1a5d548dc3ac0100743b0"
+"checksum duct 0.13.4 (registry+https://github.com/rust-lang/crates.io-index)" = "f90a9c3a25aafbd538c7d40a53f83c4487ee8216c12d1c8ef2c01eb2f6ea1553"
 "checksum encoding_rs 0.8.22 (registry+https://github.com/rust-lang/crates.io-index)" = "cd8d03faa7fe0c1431609dfad7bbe827af30f82e1e2ae6f7ee4fca6bd764bc28"
 "checksum env_logger 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "44533bbbb3bb3c1fa17d9f2e4e38bbbaf8396ba82193c4cb1b6445d711445d36"
 "checksum fake-simd 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e88a8acf291dafb59c2d96e8f59828f3838bb1a70398823ade51a84de6a6deed"
