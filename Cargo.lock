@@ -112,7 +112,7 @@ dependencies = [
  "iron 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "multibase 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "multihash 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "multihash 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "opentelemetry 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "opentelemetry-jaeger 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pretty_env_logger 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -789,7 +789,7 @@ dependencies = [
 
 [[package]]
 name = "multihash"
-version = "0.10.0"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "blake2b_simd 0.5.10 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2094,7 +2094,7 @@ dependencies = [
 "checksum miow 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "8c1f2f3b1cf331de6896aabf6e9d55dca90356cc9960cca7eaaf408a355ae919"
 "checksum modifier 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "41f5c9112cb662acd3b204077e0de5bc66305fa8df65c8019d5adb10e9ab6e58"
 "checksum multibase 0.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b78c60039650ff12e140ae867ef5299a58e19dded4d334c849dc7177083667e2"
-"checksum multihash 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f4b34e6ba21b71c8df0aade813b358165790eb3cc8fe4c7b3f6a9e86d82b7923"
+"checksum multihash 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ae32179a9904ccc6e063de8beee7f5dd55fae85ecb851ca923d55722bc28cf5d"
 "checksum native-tls 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "4b2df1a4c22fd44a62147fd8f13dd0f95c9d8ca7b2610299b2a2f9cf8964274e"
 "checksum net2 0.2.33 (registry+https://github.com/rust-lang/crates.io-index)" = "42550d9fb7b6684a6d404d9fa7250c2eb2646df731d1c06afc06dcee9e1bcf88"
 "checksum nom 4.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2ad2a91a8e869eeb30b9cb3119ae87773a8f4ae617f41b1eb9c154b2905f7bd6"
