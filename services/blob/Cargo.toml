@@ -14,7 +14,7 @@ multihash = "~0.10"
 opentelemetry = "~0.2"
 opentelemetry-jaeger = "~0.1"
 pretty_env_logger = "~0.4"
-reqwest = { version = "~0.10", features = ["blocking"] }
+reqwest = { version = "~0.11", features = ["blocking"] }
 router = "~0.6"
 serde = { version = "1.0", features = ["derive"]}
 serde_json = "1.0"
